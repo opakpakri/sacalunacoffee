@@ -8,7 +8,7 @@ import {
   faTimesCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons"; // Added more relevant icons
-import LogoSmall from "../assets/images/logocompany.webp";
+import LogoSmall from "../assets/images/logocompany.jpeg";
 import bgImage from "../assets/images/bgImage.webp"; // Background image for the page
 
 function BlogViewPage() {

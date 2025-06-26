@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import LogoImage from "../assets/images/logocompany.webp";
+import LogoImage from "../assets/images/logocompany.jpeg";
 // Import ikon FontAwesome yang dibutuhkan
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons"; // Mengimpor faBars untuk hamburger, faXmark untuk close

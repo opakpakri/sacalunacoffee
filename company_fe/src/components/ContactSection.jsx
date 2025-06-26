@@ -91,7 +91,7 @@ const ContactSection = () => {
               </div>
             </div>
           </div>
-          <div className="flex-1 flex items-center justify-center min-h-[400px] animate-fade-in-right">
+          <div className="flex-1 flex items-center justify-center animate-fade-in-right">
             {" "}
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.471126007544!2d110.39889529999999!3d-7.7397471!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a597b663d6e8f%3A0x268f7c3cf6aad7d7!2sSacaluna%20Coffee!5e0!3m2!1sid!2sid!4v1750953053974!5m2!1sid!2sid"
@@ -101,7 +101,7 @@ const ContactSection = () => {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Map Sacaluna Coffee"
-              className="rounded-xl shadow-2xl border-4 border-yellow-500"
+              className="rounded-xl shadow-2xl border-2 border-yellow-500"
             ></iframe>
           </div>
         </div>

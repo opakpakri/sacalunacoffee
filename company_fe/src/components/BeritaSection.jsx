@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LogoSmall from "../assets/images/logo.webp"; // Assuming this is Sacaluna's logo
+import LogoSmall from "../assets/images/logocompany.webp"; // Assuming this is Sacaluna's logo
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,

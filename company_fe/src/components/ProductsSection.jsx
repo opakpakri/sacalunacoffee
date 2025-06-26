@@ -1,6 +1,6 @@
 import React from "react";
 import BgCoffee from "../assets/images/bgCoffee.webp"; // Background image for products
-// import LogoSmall from "../assets/images/logocompany.jpeg";
+import LogoSmall from "../assets/images/logocompany.webp";
 import Menu1 from "../assets/images/menu1.jpeg";
 import Menu2 from "../assets/images/menu2.jpeg";
 import Menu3 from "../assets/images/menu3.jpeg";
@@ -98,7 +98,7 @@ const ProductsSection = () => {
       <div className="absolute bottom-6 left-6 flex items-center gap-2 z-10 text-white">
         {" "}
         {/* Subtle branding */}
-        {/* <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" /> */}
+        <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" />
         <span className="text-sm font-medium">Sacaluna Coffee</span>
       </div>
     </div>

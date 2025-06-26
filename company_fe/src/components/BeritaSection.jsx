@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import LogoSmall from "../assets/images/logocompany.jpeg"; // Assuming this is Sacaluna's logo
+import LogoSmall from "../assets/images/logocompany.webp"; // Assuming this is Sacaluna's logo
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,
@@ -162,7 +162,7 @@ const BeritaSection = () => {
 
       {/* Branding at bottom right - this should be in a global footer, not per section */}
       <div className="absolute bottom-6 right-6 flex items-center gap-2 text-gray-600">
-        {/* <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" /> */}
+        <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" />
         <span className="text-sm font-medium">Sacaluna Coffee</span>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-// import LogoImage from "../assets/images/logocompany.jpeg";
+import LogoImage from "../assets/images/logocompany.webp";
 // Import ikon FontAwesome yang dibutuhkan
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons"; // Mengimpor faBars untuk hamburger, faXmark untuk close
@@ -103,11 +103,11 @@ function Navbar() {
           className="flex items-center gap-2 cursor-pointer transform transition-transform duration-300"
           onClick={() => handleMenuClick("Home")}
         >
-          {/* <img
+          <img
             src={LogoImage}
             alt="Logo"
             className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-full shadow-lg"
-          /> */}
+          />
           <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-extrabold tracking-wide">
             Sacaluna Coffee
           </h1>

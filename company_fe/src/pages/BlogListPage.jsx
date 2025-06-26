@@ -10,7 +10,7 @@ import {
   faSpinner, // For loading state
   faInfoCircle, // For no data state
 } from "@fortawesome/free-solid-svg-icons";
-import LogoSmall from "../assets/images/logocompany.jpeg"; // Assuming this is Sacaluna's logo
+import LogoSmall from "../assets/images/logocompany.webp"; // Assuming this is Sacaluna's logo
 
 function BlogListPage() {
   const [blogs, setBlogs] = useState([]);

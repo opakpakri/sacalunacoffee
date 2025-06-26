@@ -8,8 +8,8 @@ import {
   faTimesCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons"; // Added more relevant icons
-import LogoSmall from "../assets/images/logocompany.webp";
-import bgImage from "../assets/images/bgImage.webp"; // Background image for the page
+import LogoSmall from "../assets/images/logocompany.jpg";
+import bgImage from "../assets/images/bgImage.jpg"; // Background image for the page
 
 function BlogViewPage() {
   const { id } = useParams();

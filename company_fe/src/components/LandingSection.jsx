@@ -1,6 +1,6 @@
 // components/HomeSections/LandingSection.jsx
 import React from "react";
-import LandingImage from "../assets/images/landing.webp";
+import LandingImage from "../assets/images/landing.jpg";
 
 const LandingSection = () => {
   return (

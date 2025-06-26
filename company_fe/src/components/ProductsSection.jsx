@@ -1,12 +1,12 @@
 import React from "react";
 import BgCoffee from "../assets/images/bgCoffee.webp"; // Background image for products
 import LogoSmall from "../assets/images/logocompany.webp";
-import Menu1 from "../assets/images/menu1.jpeg";
-import Menu2 from "../assets/images/menu2.jpeg";
-import Menu3 from "../assets/images/menu3.jpeg";
-import Menu4 from "../assets/images/menu4.jpeg";
-import Menu5 from "../assets/images/menu5.jpeg";
-import Menu6 from "../assets/images/menu6.jpeg";
+import Menu1 from "../assets/images/menu1.jpg";
+import Menu2 from "../assets/images/menu2.jpg";
+import Menu3 from "../assets/images/menu3.jpg";
+import Menu4 from "../assets/images/menu4.jpg";
+import Menu5 from "../assets/images/menu5.jpg";
+import Menu6 from "../assets/images/menu6.jpg";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css"; // Core Swiper styles
 import {

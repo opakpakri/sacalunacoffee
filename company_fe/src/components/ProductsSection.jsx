@@ -1,12 +1,12 @@
 import React from "react";
-import BgCoffee from "../assets/images/bgCoffee.jpg";
-import LogoSmall from "../assets/images/logocompany.jpg";
-import Menu1 from "../assets/images/menu1.jpg";
-import Menu2 from "../assets/images/menu2.jpg";
-import Menu3 from "../assets/images/menu3.jpg";
-import Menu4 from "../assets/images/menu4.jpg";
-import Menu5 from "../assets/images/menu5.jpg";
-import Menu6 from "../assets/images/menu6.jpg";
+import BgCoffee from "../assets/Images/bgCoffee.jpg";
+import LogoSmall from "../assets/Images/logocompany.jpg";
+import Menu1 from "../assets/Images/menu1.jpg";
+import Menu2 from "../assets/Images/menu2.jpg";
+import Menu3 from "../assets/Images/menu3.jpg";
+import Menu4 from "../assets/Images/menu4.jpg";
+import Menu5 from "../assets/Images/menu5.jpg";
+import Menu6 from "../assets/Images/menu6.jpg";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import {

@@ -1,5 +1,5 @@
 import React from "react";
-import BgImage from "../assets/images/bgImage.jpg";
+import BgImage from "../assets/Images/bgImage.jpg";
 import {
   faInstagram,
   faTiktok,

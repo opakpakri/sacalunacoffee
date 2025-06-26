@@ -1,8 +1,8 @@
 import React from "react";
-import Fasilitas1 from "../assets/images/fasilitas1.jpg";
-import Fasilitas2 from "../assets/images/fasilitas2.jpg";
-import Fasilitas3 from "../assets/images/fasilitas3.jpg";
-import LogoSmall from "../assets/images/logocompany.jpg";
+import Fasilitas1 from "../assets/Images/fasilitas1.jpg";
+import Fasilitas2 from "../assets/Images/fasilitas2.jpg";
+import Fasilitas3 from "../assets/Images/fasilitas3.jpg";
+import LogoSmall from "../assets/Images/logocompany.jpg";
 
 const fasilitasData = [
   {

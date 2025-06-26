@@ -10,7 +10,7 @@ import {
   faSpinner,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import LogoSmall from "../assets/images/logocompany.jpg";
+import LogoSmall from "../assets/Images/logocompany.jpg";
 
 function BlogListPage() {
   const [blogs, setBlogs] = useState([]);

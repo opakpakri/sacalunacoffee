@@ -1,5 +1,5 @@
 import React from "react";
-import BgCoffee from "../assets/images/bgCoffee.jpg"; // Background image for products
+import BgCoffee from "../assets/images/bgCoffee.jpg";
 import LogoSmall from "../assets/images/logocompany.jpg";
 import Menu1 from "../assets/images/menu1.jpg";
 import Menu2 from "../assets/images/menu2.jpg";
@@ -8,17 +8,16 @@ import Menu4 from "../assets/images/menu4.jpg";
 import Menu5 from "../assets/images/menu5.jpg";
 import Menu6 from "../assets/images/menu6.jpg";
 import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css"; // Core Swiper styles
+import "swiper/css";
 import {
   Autoplay,
   EffectCoverflow,
   Pagination,
   Navigation,
-} from "swiper/modules"; // Import Swiper modules
-import "swiper/css/effect-coverflow"; // Import specific effect styles
-import "swiper/css/pagination"; // Import pagination styles
-import "swiper/css/navigation"; // Import navigation styles (if used)
-
+} from "swiper/modules";
+import "swiper/css/effect-coverflow";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
 const products = [
   { id: 1, name: "Nosegrind", img: Menu1 },
   { id: 2, name: "Jag Hammer", img: Menu2 },
@@ -32,11 +31,10 @@ const ProductsSection = () => {
   return (
     <div
       id="Menu"
-      className="relative text-white py-16 px-8 md:px-16 text-center bg-cover bg-center" // Reduced horizontal padding slightly for carousel fit
+      className="relative text-white py-16 px-8 md:px-16 text-center bg-cover bg-center"
       style={{ backgroundImage: `url(${BgCoffee})` }}
     >
       <div className="absolute inset-0 bg-black/40 z-0"></div>{" "}
-      {/* Darker overlay */}
       <div className="relative z-10">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight drop-shadow-lg">
           Try Our Signature
@@ -47,19 +45,19 @@ const ProductsSection = () => {
         </p>
 
         <Swiper
-          slidesPerView={1} // Default to 1 on small screens
+          slidesPerView={1}
           breakpoints={{
             640: { slidesPerView: 2, spaceBetween: 20 },
             768: { slidesPerView: 3, spaceBetween: 30 },
-            1024: { slidesPerView: 4, spaceBetween: 40 }, // More space for larger screens
+            1024: { slidesPerView: 4, spaceBetween: 40 },
           }}
           loop={true}
-          centeredSlides={true} // Center active slide
+          centeredSlides={true}
           autoplay={{
             delay: 3000,
             disableOnInteraction: false,
           }}
-          effect={"coverflow"} // Engaging 3D effect
+          effect={"coverflow"}
           coverflowEffect={{
             rotate: 50,
             stretch: 0,
@@ -68,15 +66,14 @@ const ProductsSection = () => {
             slideShadows: true,
           }}
           pagination={{ clickable: true }}
-          navigation={false} // You can enable navigation arrows if desired
+          navigation={false}
           modules={[Autoplay, EffectCoverflow, Pagination, Navigation]}
-          className="mySwiper py-12" // Increased vertical padding for pagination dots
+          className="mySwiper py-12"
         >
           {products.map(({ id, name, img }) => (
             <SwiperSlide key={id} className="flex flex-col items-center">
               <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 group mb-18">
                 {" "}
-                {/* Card styling */}
                 <img
                   src={img}
                   alt={name}
@@ -85,7 +82,6 @@ const ProductsSection = () => {
                 />
                 <div className="p-4 bg-black text-white text-center">
                   {" "}
-                  {/* Dark background for text */}
                   <h3 className="font-bold text-xl mb-1 leading-tight">
                     {name}
                   </h3>
@@ -97,7 +93,6 @@ const ProductsSection = () => {
       </div>
       <div className="absolute bottom-6 left-6 flex items-center gap-2 z-10 text-white">
         {" "}
-        {/* Subtle branding */}
         <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" />
         <span className="text-sm font-medium">Sacaluna Coffee</span>
       </div>

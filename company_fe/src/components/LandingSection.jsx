@@ -1,4 +1,3 @@
-// components/HomeSections/LandingSection.jsx
 import React from "react";
 import LandingImage from "../assets/images/landing.jpg";
 

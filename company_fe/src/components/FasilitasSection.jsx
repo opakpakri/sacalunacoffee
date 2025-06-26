@@ -2,7 +2,7 @@ import React from "react";
 import Fasilitas1 from "../assets/images/fasilitas1.webp";
 import Fasilitas2 from "../assets/images/fasilitas2.webp";
 import Fasilitas3 from "../assets/images/fasilitas3.webp";
-import LogoSmall from "../assets/images/logocompany.jpeg";
+// import LogoSmall from "../assets/images/logocompany.jpeg";
 
 const fasilitasData = [
   {
@@ -70,11 +70,11 @@ const FasilitasSection = () => {
       <div className="absolute bottom-6 right-6 flex items-center gap-2 text-gray-600">
         {" "}
         {/* Subtle branding */}
-        <img
+        {/* <img
           src={LogoSmall}
           alt="Logo Sacaluna Coffee"
           className="w-7 h-7"
-        />{" "}
+        />{" "} */}
         {/* Slightly larger logo */}
         <span className="text-sm font-medium">Sacaluna Coffee</span>
       </div>

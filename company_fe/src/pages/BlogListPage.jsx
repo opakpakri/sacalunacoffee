@@ -10,7 +10,7 @@ import {
   faSpinner, // For loading state
   faInfoCircle, // For no data state
 } from "@fortawesome/free-solid-svg-icons";
-import LogoSmall from "../assets/images/logocompany.jpeg"; // Assuming this is Sacaluna's logo
+// import LogoSmall from "../assets/images/logocompany.jpeg"; // Assuming this is Sacaluna's logo
 
 function BlogListPage() {
   const [blogs, setBlogs] = useState([]);
@@ -177,11 +177,11 @@ function BlogListPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <img
+                    {/* <img
                       src={LogoSmall}
                       alt="Sacaluna Logo"
                       className="w-5 h-5"
-                    />{" "}
+                    />{" "} */}
                     {/* Slightly larger logo */}
                     <span className="font-semibold text-gray-800">
                       Admin Sacaluna Coffee

@@ -1,6 +1,6 @@
 import React from "react";
-import BgCoffee from "../assets/images/bgCoffee.webp"; // Background image for products
-import LogoSmall from "../assets/images/logocompany.webp";
+import BgCoffee from "../assets/images/bgCoffee.jpg"; // Background image for products
+import LogoSmall from "../assets/images/logocompany.jpg";
 import Menu1 from "../assets/images/menu1.jpg";
 import Menu2 from "../assets/images/menu2.jpg";
 import Menu3 from "../assets/images/menu3.jpg";

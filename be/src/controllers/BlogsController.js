@@ -23,7 +23,7 @@ const addBlog = async (req, res) => {
       return res.status(400).json({ message: "Semua field harus diisi" });
     }
 
-    const imagePath = `/uploads/blogs/${image}`;
+    const imagePath = `/uploads/${image}`;
     await pool.query(
       "INSERT INTO blogs (title, content, image_blog) VALUES (?, ?, ?)",
       [title, content, imagePath]
@@ -57,7 +57,7 @@ const updateBlog = async (req, res) => {
       }
     }
 
-    const imagePath = newImage ? `/uploads/blogs/${newImage}` : null;
+    const imagePath = newImage ? `/uploads/${newImage}` : null;
     await pool.query(
       `
       UPDATE blogs 

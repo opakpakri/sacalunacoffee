@@ -31,7 +31,7 @@ function BarcodesPage() {
   const [tableError, setTableError] = useState(null); // <--- State error untuk data tabel utama
   const [isReusedToken, setIsReusedToken] = useState(null);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
-  const TOKEN_EXPIRY_SECONDS = 20;
+  const TOKEN_EXPIRY_MINUTES = 20; // DIUBAH: Sekarang dalam menit
 
   const qrCodeRef = useRef();
   const [authError, setAuthError] = useState(null);
@@ -146,10 +146,10 @@ function BarcodesPage() {
 
       if (res.ok && data.success) {
         const age =
-          (Date.now() - new Date(data.qr_generated_at).getTime()) / 1000;
+          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60); // Ubah ke menit
 
         if (data.reused) {
-          if (age > TOKEN_EXPIRY_SECONDS) {
+          if (age > TOKEN_EXPIRY_MINUTES) {
             const forcedRes = await fetch(
               `https://sacalunacoffee-production.up.railway.app/api/tables/generate-qr/${table.id_table}?force=true`,
               {
@@ -238,9 +238,9 @@ function BarcodesPage() {
 
       if (res.ok && data.success && data.qr_token) {
         const age =
-          (Date.now() - new Date(data.qr_generated_at).getTime()) / 1000;
+          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60); // Ubah ke menit
 
-        if (age < TOKEN_EXPIRY_SECONDS) {
+        if (age < TOKEN_EXPIRY_MINUTES) {
           setQrData(data.qr_token);
           setIsReusedToken(true);
           setIsTokenExpired(false);
@@ -294,7 +294,7 @@ function BarcodesPage() {
         const bottomText2 = "jika token ditolak mohon hubungi kasir";
         const bottomText2Font = "16px Arial";
 
-        const bottomText3 = `Masa berlaku token ${TOKEN_EXPIRY_SECONDS} detik`;
+        const bottomText3 = `Masa berlaku token ${TOKEN_EXPIRY_MINUTES} menit`; // Sudah dalam menit
         const bottomText3Font = "14px Arial";
 
         ctx.font = topText1Font;
@@ -444,7 +444,7 @@ function BarcodesPage() {
   };
 
   // Base URL untuk QR Code (URL aplikasi frontend Anda)
-  const appBaseUrl = "https://sacalunacoffee-production.up.railway.app";
+  const appBaseUrl = "https://sacalunacoffee-menu.vercel.app";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -668,7 +668,8 @@ function BarcodesPage() {
                     : "Token baru berhasil dibuat!"}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Masa berlaku QR Code: {TOKEN_EXPIRY_SECONDS} detik.
+                  Masa berlaku QR Code: {TOKEN_EXPIRY_MINUTES} menit.{" "}
+                  {/* Sudah dalam menit */}
                 </p>
 
                 <div className="flex flex-col gap-4 mt-6">
@@ -677,7 +678,7 @@ function BarcodesPage() {
                     onClick={() => generateQRToken(selectedTable)}
                     disabled={loading}
                     className="px-6 py-3 bg-yellow-500 text-black rounded-lg font-semibold text-lg shadow-md
-                              hover:bg-yellow-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                   hover:bg-yellow-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <FontAwesomeIcon icon={faSpinner} spin />
@@ -691,7 +692,7 @@ function BarcodesPage() {
                   <button
                     onClick={downloadQRCode}
                     className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold text-lg shadow-md
-                              hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                   hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <FontAwesomeIcon icon={faDownload} />
                     <span>Download QR</span>
@@ -711,7 +712,7 @@ function BarcodesPage() {
                   onClick={() => generateQRToken(selectedTable)}
                   disabled={loading}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg shadow-md
-                              hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                   hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <FontAwesomeIcon icon={faSpinner} spin />

@@ -6,6 +6,8 @@ import {
   faArrowRight,
   faUtensils, // For Pastry, Main Course, Snacks
   faCoffee, // For all other drink categories
+  faSpinner, // Tambahkan spinner untuk loading
+  faTimesCircle, // Tambahkan untuk error
 } from "@fortawesome/free-solid-svg-icons";
 
 function MenusPage({ addToCart, searchTerm }) {
@@ -23,16 +25,31 @@ function MenusPage({ addToCart, searchTerm }) {
         const res = await fetch(
           "https://sacalunacoffee-production.up.railway.app/api/menus"
         );
-        if (!res.ok) throw new Error("Server error");
+        if (!res.ok) {
+          // Log error respons dari server
+          const errorText = await res.text(); // Ambil teks respons untuk debugging
+          console.error(`Server error: ${res.status} - ${errorText}`);
+          throw new Error("Gagal mengambil data menu dari server.");
+        }
         const data = await res.json();
-        setMenus(data.data);
-        const uniqueCategories = [
-          ...new Set(data.data.map((menu) => menu.category_menu)),
-        ];
-        setCategories(uniqueCategories);
-        setHasError(false);
+        // Pastikan data.data adalah array yang valid
+        if (data && Array.isArray(data.data)) {
+          setMenus(data.data);
+          const uniqueCategories = [
+            ...new Set(data.data.map((menu) => menu.category_menu)),
+          ];
+          setCategories(uniqueCategories);
+          setHasError(false);
+        } else {
+          // Jika struktur data tidak sesuai
+          console.error("Struktur data menu tidak valid:", data);
+          throw new Error("Struktur data menu tidak valid.");
+        }
       } catch (error) {
-        console.error("Gagal mengambil data menu:", error);
+        console.error(
+          "Gagal mengambil data menu (kesalahan jaringan/lainnya):",
+          error
+        );
         setHasError(true);
       } finally {
         setLoading(false);
@@ -79,7 +96,6 @@ function MenusPage({ addToCart, searchTerm }) {
     ) {
       return faUtensils;
     }
-    // All other categories (coffee, beverage, easy to drink, traditional, milk based, non coffee etc.) will get faCoffee
     return faCoffee;
   };
 
@@ -93,18 +109,27 @@ function MenusPage({ addToCart, searchTerm }) {
 
   const noResults = searchTerm.trim() !== "" && filteredMenus.length === 0;
 
+  // Handling render based on loading, error, and no results
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+      <div className="flex justify-center items-center min-h-[60vh] flex-col">
+        <FontAwesomeIcon
+          icon={faSpinner}
+          spin
+          className="text-4xl text-yellow-500 mb-4"
+        />
         <p className="ml-4 text-xl text-gray-700">Memuat menu...</p>
       </div>
     );
 
   if (hasError)
     return (
-      <div className="flex justify-center items-center min-h-[60vh] bg-red-50">
+      <div className="flex justify-center items-center min-h-[60vh] bg-red-50 flex-col">
         <div className="text-center p-8 bg-white rounded-lg shadow-md">
+          <FontAwesomeIcon
+            icon={faTimesCircle}
+            className="text-5xl text-red-600 mb-4"
+          />
           <p className="text-red-600 font-bold text-xl mb-4">
             Terjadi Kesalahan!
           </p>
@@ -125,7 +150,6 @@ function MenusPage({ addToCart, searchTerm }) {
     <div className="menupage pb-10 bg-gray-50">
       <div className="container mx-auto p-8">
         <div className="flex justify-end gap-4 mb-8 items-center">
-          {/* QRIS Payment Reminder Button - appears conditionally */}
           {showQrisReminderButton && (
             <div
               onClick={() =>
@@ -135,7 +159,7 @@ function MenusPage({ addToCart, searchTerm }) {
                 )
               }
               className="flex items-center gap-3 px-6 py-3 bg-yellow-500 text-gray-900 font-semibold rounded-full shadow-lg
-                         hover:bg-yellow-600 transform hover:scale-105 transition-all duration-300 cursor-pointer animate-pulse-fade"
+                          hover:bg-yellow-600 transform hover:scale-105 transition-all duration-300 cursor-pointer animate-pulse-fade"
             >
               <FontAwesomeIcon icon={faArrowRight} className="text-lg" />
               <span className="whitespace-nowrap">
@@ -160,7 +184,6 @@ function MenusPage({ addToCart, searchTerm }) {
           (searchTerm ? filteredCategories : categories).map((category) => (
             <section key={category} id={category} className="mb-12">
               <h2 className="text-4xl font-extrabold text-gray-800 mb-8 border-b-4 border-yellow-500 pb-2 inline-block">
-                {/* Category Icon logic based on your request */}
                 <FontAwesomeIcon
                   icon={getCategoryIcon(category)}
                   className="mr-3 text-yellow-600"
@@ -186,10 +209,15 @@ function MenusPage({ addToCart, searchTerm }) {
                             </span>
                           )}
                           <img
-                            src={`https://sacalunacoffee-production.up.railway.app${menu.image_menu}`}
+                            src={menu.image_menu} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
                             alt={menu.name_menu}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                             loading="lazy"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://placehold.co/240x240/cccccc/000000?text=Error";
+                            }} // Fallback image
                           />
                         </div>
                         <div className="p-5 flex flex-col flex-grow">
@@ -203,7 +231,7 @@ function MenusPage({ addToCart, searchTerm }) {
                             </span>
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent card click from interfering
+                                e.stopPropagation();
                                 if (showQrisReminderButton) {
                                   alert(
                                     "Harap Selesaikan Pembayaran Sebelumnya!"

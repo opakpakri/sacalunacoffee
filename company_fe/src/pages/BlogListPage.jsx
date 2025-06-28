@@ -28,7 +28,6 @@ function BlogListPage() {
       if (!res.ok) throw new Error("Server error");
 
       const data = await res.json();
-      // Pastikan data.data adalah array sebelum di-set
       if (data && Array.isArray(data.data)) {
         setBlogs(data.data);
       } else {
@@ -38,7 +37,7 @@ function BlogListPage() {
     } catch (error) {
       console.error("Gagal mengambil data blog:", error);
       setHasError(true);
-      setBlogs([]); // Pastikan blogs kosong jika ada error
+      setBlogs([]);
     } finally {
       setLoading(false);
     }
@@ -147,7 +146,7 @@ function BlogListPage() {
             >
               <div className="w-full md:w-80 h-52 overflow-hidden rounded-lg flex-shrink-0">
                 <img
-                  src={blog.image_blog} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
+                  src={blog.image_blog}
                   alt={blog.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
@@ -155,7 +154,7 @@ function BlogListPage() {
                     e.target.onerror = null;
                     e.target.src =
                       "https://placehold.co/320x208/cccccc/000000?text=Image+Load+Error";
-                  }} // Fallback image
+                  }}
                 />
               </div>
 
@@ -176,7 +175,7 @@ function BlogListPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <img
-                      src={LogoSmall} // Pastikan LogoSmall ini diimpor dengan benar
+                      src={LogoSmall}
                       alt="Sacaluna Logo"
                       className="w-5 h-5"
                     />
@@ -204,12 +203,18 @@ function BlogListPage() {
               </div>
             </div>
           ))}
+
+          {/* Moved branding div here, no absolute positioning */}
+          <div className="mt-12 text-center flex items-center justify-center gap-2 text-gray-600">
+            <img
+              src={LogoSmall}
+              alt="Logo Sacaluna Coffee"
+              className="w-7 h-7"
+            />
+            <span className="text-sm font-medium">Sacaluna Coffee</span>
+          </div>
         </div>
       )}
-      <div className="absolute bottom-6 right-6 flex items-center gap-2 text-gray-600">
-        <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" />
-        <span className="text-sm font-medium">Sacaluna Coffee</span>
-      </div>
     </div>
   );
 }

@@ -4,9 +4,9 @@ import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons"; // <-- Import faSpinner
-import { FaChevronDown } from "react-icons/fa";
-import oldImage from "../../assets/images/signImage.webp";
+import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FaChevronDown } from "react-icons/fa"; // Pastikan FaChevronDown diimpor
+import oldImage from "../../assets/images/signImage.webp"; // Menggunakan ini sebagai placeholder
 
 function AddMenusPage() {
   const navigate = useNavigate();
@@ -17,15 +17,13 @@ function AddMenusPage() {
     image: null,
   });
   const [previewImage, setPreviewImage] = useState(null);
-  const [drinkType, setDrinkType] = useState("Default");
-  const [authError, setAuthError] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false); // <--- State baru untuk loading tombol submit
-
+  const [drinkType, setDrinkType] = useState(""); // Default kosong, bukan "Default"
   const isFoodCategory = ["Pastry", "Main Course", "Snacks"].includes(
     form.category
   ); // Definisikan di sini agar bisa digunakan di JSX
+  const [authError, setAuthError] = useState(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -84,8 +82,16 @@ function AddMenusPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      setPreviewImage(URL.createObjectURL(file));
+      if (file) {
+        setPreviewImage(URL.createObjectURL(file));
+      } else {
+        setPreviewImage(null);
+      }
     } else {
+      // Reset drinkType jika kategori berubah menjadi kategori makanan
+      if (name === "category" && isFoodCategory) {
+        setDrinkType(""); // Reset drinkType saat beralih ke kategori makanan
+      }
       setForm({ ...form, [name]: value });
     }
   };
@@ -93,20 +99,21 @@ function AddMenusPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    setSubmitLoading(true); // <--- Aktifkan loading saat submit dimulai
+    setSubmitLoading(true);
 
     if (!form.image) {
       alert("Silakan unggah gambar terlebih dahulu.");
-      setSubmitLoading(false); // <--- Matikan loading jika validasi gagal
+      setSubmitLoading(false);
       return;
     }
 
-    const formData = new FormData();
     let finalName = form.name_menu;
-    if (!isFoodCategory && drinkType !== "Default") {
+    // Hanya tambahkan prefix "Iced" atau "Hot" jika kategori adalah minuman DAN drinkType bukan kosong/Default
+    if (!isFoodCategory && drinkType !== "" && drinkType !== "Default") {
       finalName = `${drinkType} ${finalName}`;
     }
 
+    const formData = new FormData();
     formData.append("name_menu", finalName);
     formData.append("price", form.price);
     formData.append("category", form.category);
@@ -126,7 +133,19 @@ function AddMenusPage() {
       );
 
       if (!response.ok) {
-        await handleAuthenticationError(response);
+        const errorData = await response.json();
+        // Menambahkan penanganan error spesifik dari backend (contoh: nama menu sudah ada)
+        if (
+          response.status === 409 &&
+          errorData.message &&
+          errorData.message.includes("Nama menu sudah ada")
+        ) {
+          alert("Nama menu ini sudah ada. Silakan gunakan nama lain.");
+          setAuthError("Nama menu ini sudah ada. Silakan gunakan nama lain.");
+        } else {
+          alert(errorData.message || "Gagal menambahkan menu.");
+          await handleAuthenticationError(response);
+        }
         return;
       }
 
@@ -136,7 +155,7 @@ function AddMenusPage() {
       console.error("Error saat menambahkan menu:", error);
       setAuthError("Terjadi kesalahan saat menambahkan menu: " + error.message);
     } finally {
-      setSubmitLoading(false); // <--- Matikan loading setelah request selesai
+      setSubmitLoading(false);
     }
   };
 
@@ -219,17 +238,19 @@ function AddMenusPage() {
                 </div>
               </div>
 
+              {/* Tampilkan Tipe Minuman hanya jika BUKAN kategori makanan DAN kategori sudah dipilih */}
               {!isFoodCategory && form.category && (
                 <div className="flex flex-col">
                   <label className="text-lg font-bold mb-1">Tipe Minuman</label>
                   <div className="relative">
                     <select
-                      name="drink_type"
+                      name="drinkType" // Ubah nama dari "drink_type" ke "drinkType" agar konsisten dengan state
                       value={drinkType}
                       onChange={(e) => setDrinkType(e.target.value)}
                       className="appearance-none w-full px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
-                      <option value="Default">Default</option>
+                      <option value="">Default</option>{" "}
+                      {/* Ubah "Default" menjadi kosong */}
                       <option value="Iced">Iced</option>
                       <option value="Hot">Hot</option>
                     </select>
@@ -242,7 +263,7 @@ function AddMenusPage() {
 
               <div className="flex flex-col">
                 <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600  focus-within:ring-2 focus-within:ring-yellow-500">
+                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
                   <span>
                     {form.image ? form.image.name : "Pilih gambar..."}
                   </span>
@@ -261,7 +282,7 @@ function AddMenusPage() {
                   type="submit"
                   disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                             disabled:opacity-50 disabled:cursor-not-allowed"
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -275,7 +296,7 @@ function AddMenusPage() {
                       className="group-hover:text-black text-lg"
                     />
                   )}
-                  {submitLoading ? "Menambahkan..." : "Add Menu"}
+                  {submitLoading ? "Menambahkan..." : "Add Menu"}{" "}
                 </button>
               </div>
             </div>
@@ -286,6 +307,11 @@ function AddMenusPage() {
                   src={previewImage}
                   alt="Preview"
                   className="object-cover w-full h-full rounded"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                  }}
                 />
               ) : (
                 <div className="relative w-full h-full flex items-center justify-center">
@@ -294,9 +320,14 @@ function AddMenusPage() {
                   </div>
 
                   <img
-                    src={oldImage}
+                    src={oldImage} // Menggunakan oldImage sebagai placeholder lokal
                     alt="Placeholder"
                     className="object-cover w-full h-full rounded opacity-70"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    }}
                   />
                 </div>
               )}

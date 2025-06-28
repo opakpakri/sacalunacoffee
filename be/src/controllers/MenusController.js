@@ -1,6 +1,5 @@
-const fs = require("fs");
 const pool = require("../config/db");
-const path = require("path");
+const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
 
 const getAllMenus = async (req, res) => {
   try {
@@ -17,24 +16,42 @@ const getAllMenus = async (req, res) => {
 const addMenu = async (req, res) => {
   try {
     const { name_menu, price, category } = req.body;
-    const file = req.file;
+    // req.file?.path akan berisi URL gambar dari Cloudinary
+    const imageUrl = req.file?.path;
 
-    if (!file) {
+    if (!name_menu || !price || !category || !imageUrl) {
+      // Jika ada gambar yang terupload ke Cloudinary tapi validasi gagal, hapus gambar tersebut
+      if (req.file && req.file.public_id) {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      }
       return res
         .status(400)
-        .json({
-          message:
-            "Image is required or invalid type (only .png or .webp allowed)",
-        });
+        .json({ message: "Semua field harus diisi, termasuk gambar" });
     }
 
-    const imagePath = `/uploads/menus/${file.filename}`;
+    // Simpan URL Cloudinary ke database
     const query = `INSERT INTO menus (name_menu, price, category_menu, image_menu) VALUES (?, ?, ?, ?)`;
-    await pool.query(query, [name_menu, price, category, imagePath]);
+    await pool.query(query, [name_menu, price, category, imageUrl]);
 
-    res.status(201).json({ message: "Menu added successfully" });
+    res
+      .status(201)
+      .json({ message: "Menu added successfully", imageUrl: imageUrl });
   } catch (err) {
     console.error("Error adding menu:", err.message);
+    // Jika ada gambar yang terupload ke Cloudinary sebelum error DB, hapus juga
+    if (req.file && req.file.public_id) {
+      try {
+        await cloudinary.uploader.destroy(req.file.public_id);
+        console.log(
+          "Gambar yang gagal disimpan ke DB dihapus dari Cloudinary."
+        );
+      } catch (destroyErr) {
+        console.error(
+          "Gagal menghapus gambar dari Cloudinary setelah error DB:",
+          destroyErr.message
+        );
+      }
+    }
     res.status(500).json({ message: err.message || "Failed to add menu" });
   }
 };
@@ -43,36 +60,61 @@ const updateMenu = async (req, res) => {
   try {
     const { id } = req.params;
     const { name_menu, price, category } = req.body;
+    // Dapatkan URL gambar baru dari Cloudinary (jika ada upload baru)
+    const newImageUrl = req.file?.path;
 
     const [rows] = await pool.query(
       "SELECT image_menu FROM menus WHERE id_menu = ?",
       [id]
     );
+
     if (rows.length === 0) {
+      // Jika menu tidak ditemukan tapi ada gambar baru terupload, hapus gambar baru tersebut
+      if (newImageUrl && req.file?.public_id) {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      }
       return res.status(404).json({ message: "Menu not found" });
     }
 
-    let imagePath = null;
-    const oldImage = rows[0].image_menu;
+    const oldImageUrl = rows[0].image_menu;
 
-    if (req.file) {
-      imagePath = `/uploads/menus/${req.file.filename}`;
-
-      if (oldImage) {
-        const oldImagePath = path.join(__dirname, "..", oldImage);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.error("Error deleting old image:", err.message);
-          else console.log("Old image deleted:", oldImagePath);
-        });
+    // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru yang diunggah
+    if (newImageUrl && oldImageUrl) {
+      try {
+        // Ekstrak public_id dari oldImageUrl untuk menghapusnya dari Cloudinary
+        // Regex ini menangani format URL Cloudinary dan mendapatkan folder/public_id
+        const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
+        if (publicIdMatch && publicIdMatch[1]) {
+          const publicId = publicIdMatch[1];
+          await cloudinary.uploader.destroy(publicId);
+          console.log(
+            `Gambar lama berhasil dihapus dari Cloudinary: ${publicId}`
+          );
+        } else {
+          console.warn(
+            `Tidak dapat mengekstrak public_id dari URL lama: ${oldImageUrl}`
+          );
+        }
+      } catch (deleteErr) {
+        console.error(
+          "Error deleting old image from Cloudinary:",
+          deleteErr.message
+        );
+        // Lanjutkan update DB meskipun gagal menghapus gambar lama di Cloudinary
       }
     }
 
+    // Tentukan URL gambar yang akan disimpan ke DB: gunakan yang baru jika ada, jika tidak, pertahankan yang lama
+    const imageUrlToSave = newImageUrl || oldImageUrl;
+
     await pool.query(
-      `UPDATE menus SET name_menu = ?, price = ?, category_menu = ?, image_menu = COALESCE(?, image_menu) WHERE id_menu = ?`,
-      [name_menu, price, category, imagePath, id]
+      `UPDATE menus SET name_menu = ?, price = ?, category_menu = ?, image_menu = ? WHERE id_menu = ?`,
+      [name_menu, price, category, imageUrlToSave, id] // Simpan URL Cloudinary ke database
     );
 
-    res.status(200).json({ message: "Menu updated successfully" });
+    res
+      .status(200)
+      .json({ message: "Menu updated successfully", imageUrl: imageUrlToSave });
   } catch (err) {
     console.error("Error updating menu:", err.message);
     res.status(500).json({ message: err.message || "Failed to update menu" });
@@ -90,7 +132,7 @@ const getMenuById = async (req, res) => {
       return res.status(404).json({ message: "Menu not found" });
     }
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(rows[0]); // Mengembalikan objek menu langsung, bukan { data: rows[0] }
   } catch (error) {
     console.error("Error fetching menu by id:", error.message);
     res.status(500).json({ message: "Failed to retrieve menu" });
@@ -109,13 +151,31 @@ const deleteMenu = async (req, res) => {
       return res.status(404).json({ message: "Menu not found" });
     }
 
-    const imagePath = rows[0].image_menu;
-    if (imagePath) {
-      const fullPath = path.join(__dirname, "..", imagePath);
-      fs.unlink(fullPath, (err) => {
-        if (err) console.error("Error deleting image:", err.message);
-        else console.log("Image deleted:", fullPath);
-      });
+    const imageUrlToDelete = rows[0].image_menu;
+
+    // Hapus gambar dari Cloudinary jika ada
+    if (imageUrlToDelete) {
+      try {
+        // Ekstrak public_id dari URL Cloudinary untuk menghapusnya
+        const publicIdMatch = imageUrlToDelete.match(
+          /\/upload\/\w+\/(.+)\.\w+$/
+        );
+        if (publicIdMatch && publicIdMatch[1]) {
+          const publicId = publicIdMatch[1];
+          await cloudinary.uploader.destroy(publicId);
+          console.log(`Gambar berhasil dihapus dari Cloudinary: ${publicId}`);
+        } else {
+          console.warn(
+            `Tidak dapat mengekstrak public_id dari URL: ${imageUrlToDelete}`
+          );
+        }
+      } catch (deleteErr) {
+        console.error(
+          "Error deleting image from Cloudinary:",
+          deleteErr.message
+        );
+        // Lanjutkan penghapusan DB meskipun gagal menghapus gambar dari Cloudinary
+      }
     }
 
     await pool.query("DELETE FROM menus WHERE id_menu = ?", [id]);

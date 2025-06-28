@@ -5,7 +5,7 @@ import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner, faSave } from "@fortawesome/free-solid-svg-icons";
-import { FaChevronDown } from "react-icons/fa"; // Pastikan FaChevronDown sudah diimpor
+import { FaChevronDown } from "react-icons/fa"; // Pastikan FaChevronDown diimpor
 
 function EditMenusPage() {
   const navigate = useNavigate();
@@ -15,19 +15,17 @@ function EditMenusPage() {
     name_menu: "",
     price: "",
     category: "",
-    image: null,
+    image: null, // File objek untuk upload baru
   });
-  const [previewImage, setPreviewImage] = useState(null);
-  const [oldImage, setOldImage] = useState(null);
-  const [drinkType, setDrinkType] = useState("");
-  // isDrinkCategory: true jika kategori bukan Pastry, Main Course, atau Snacks
+  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru (lokal)
+  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database (Cloudinary URL)
+  const [drinkType, setDrinkType] = useState(""); // Default kosong, bukan "Default"
   const isDrinkCategory = !["Pastry", "Main Course", "Snacks"].includes(
     form.category
-  );
+  ); // Definisikan di sini
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -85,7 +83,7 @@ function EditMenusPage() {
         return;
       }
 
-      const data = await response.json();
+      const data = await response.json(); // Backend sudah mengirim objek menu langsung
 
       const category = data.category_menu || "";
       const name = data.name_menu || "";
@@ -100,17 +98,15 @@ function EditMenusPage() {
       }
 
       setForm({
-        // Hapus "Iced " atau "Hot " dari nama menu saat menampilkan di form
         name_menu: name.replace(/^(Iced|Hot)\s+/i, ""),
         price: data.price || "",
         category: category,
-        image: null, // Jangan load gambar dari backend ke state form.image
+        image: null, // Reset file input saat fetch
       });
 
       setDrinkType(detectedDrinkType);
-      setOldImage(
-        `https://sacalunacoffee-production.up.railway.app${data.image_menu}`
-      ); // Set gambar lama untuk preview
+      // Langsung gunakan URL dari database karena sudah URL Cloudinary penuh
+      setOldImage(data.image_menu); // Ini akan menjadi URL Cloudinary lengkap
     } catch (error) {
       console.error("Gagal fetch menu:", error);
       setAuthError(
@@ -138,9 +134,18 @@ function EditMenusPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      setPreviewImage(URL.createObjectURL(file)); // Membuat URL untuk preview gambar baru
-      setOldImage(null); // Sembunyikan gambar lama jika ada gambar baru yang dipilih
+      if (file) {
+        setPreviewImage(URL.createObjectURL(file)); // Buat URL lokal untuk preview gambar baru
+      } else {
+        setPreviewImage(null); // Hapus preview jika file dibatalkan
+      }
+      setOldImage(null); // Hapus gambar lama dari tampilan preview jika ada gambar baru
     } else {
+      // Reset drinkType jika kategori berubah menjadi kategori makanan
+      if (name === "category" && !isDrinkCategory) {
+        // Periksa !isDrinkCategory karena isDrinkCategory adalah kebalikan isFoodCategory
+        setDrinkType(""); // Reset drinkType saat beralih ke kategori makanan
+      }
       setForm({ ...form, [name]: value });
     }
   };
@@ -151,11 +156,9 @@ function EditMenusPage() {
     setSubmitLoading(true);
 
     let updatedName = form.name_menu;
-    // Hanya tambahkan prefix "Iced" atau "Hot" jika kategori adalah minuman
-    if (isDrinkCategory) {
-      if (drinkType) {
-        updatedName = `${drinkType} ${form.name_menu}`;
-      }
+    // Hanya tambahkan prefix "Iced" atau "Hot" jika kategori adalah minuman DAN drinkType bukan kosong/Default
+    if (isDrinkCategory && drinkType !== "" && drinkType !== "Default") {
+      updatedName = `${drinkType} ${form.name_menu}`;
     }
 
     const formData = new FormData();
@@ -165,6 +168,7 @@ function EditMenusPage() {
     if (form.image) {
       formData.append("image", form.image); // Hanya tambahkan gambar jika ada yang baru dipilih
     }
+    // Jika tidak ada gambar baru, backend akan mempertahankan gambar lama karena newImageUrl akan null
 
     try {
       const token = localStorage.getItem("adminToken");
@@ -174,45 +178,35 @@ function EditMenusPage() {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
-            // Penting: Jangan set 'Content-Type': 'application/json'
-            // saat mengirim FormData. Browser akan mengaturnya secara otomatis
-            // dengan boundary yang benar.
           },
           body: formData,
         }
       );
 
       if (!response.ok) {
-        // Coba baca pesan error dari backend
         const errorData = await response.json();
-        // Cek apakah ini error spesifik "Name already exists"
+        // Menangani error spesifik dari backend (contoh: nama menu sudah ada)
         if (
           response.status === 409 &&
+          errorData.message &&
           errorData.message.includes("Nama menu sudah ada")
         ) {
           alert("Nama menu ini sudah ada. Silakan gunakan nama lain.");
           setAuthError("Nama menu ini sudah ada. Silakan gunakan nama lain.");
         } else {
-          // Tangani error autentikasi umum
+          alert(errorData.message || "Gagal memperbarui menu.");
           await handleAuthenticationError(response);
         }
-        return; // Hentikan eksekusi setelah menangani error
+        return;
       }
 
-      // Membaca hasil sukses dari backend jika diperlukan
-      const result = await response.json();
-
-      if (response.ok) {
-        alert("Menu berhasil diperbarui");
-        navigate("/menus");
-      } else {
-        alert(result.message || "Gagal memperbarui menu");
-      }
+      alert("Menu berhasil diperbarui");
+      navigate("/menus");
     } catch (error) {
       console.error("Error saat mengupdate menu:", error);
       setAuthError("Terjadi kesalahan saat mengupdate menu: " + error.message);
     } finally {
-      setSubmitLoading(false); // Matikan loading setelah request selesai
+      setSubmitLoading(false);
     }
   };
 
@@ -295,12 +289,10 @@ function EditMenusPage() {
                 </div>
               </div>
 
-              {isDrinkCategory && (
+              {isDrinkCategory && ( // Tampilkan hanya jika ini kategori minuman
                 <div className="flex flex-col">
                   <label className="text-lg font-bold mb-1">Tipe Minuman</label>
                   <div className="relative">
-                    {" "}
-                    {/* <<< Tambahkan div relative di sini */}
                     <select
                       name="drinkType"
                       value={drinkType}
@@ -312,12 +304,9 @@ function EditMenusPage() {
                       <option value="Hot">Hot</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-600">
-                      {" "}
-                      {/* <<< Pindahkan FaChevronDown ke dalam div ini */}
                       <FaChevronDown className="w-4 h-4" />
                     </div>
-                  </div>{" "}
-                  {/* <<< Tutup div relative */}
+                  </div>
                 </div>
               )}
 
@@ -342,7 +331,7 @@ function EditMenusPage() {
                   type="submit"
                   disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                     disabled:opacity-50 disabled:cursor-not-allowed"
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -356,37 +345,54 @@ function EditMenusPage() {
                       className="group-hover:text-black text-lg"
                     />
                   )}
-                  {submitLoading ? "Mengupdate..." : "Update Menu"}
+                  {submitLoading ? "Mengupdate..." : "Update Menu"}{" "}
                 </button>
               </div>
             </div>
 
             <div className="flex-1 flex items-center justify-center relative">
-              {previewImage ? (
+              {previewImage ? ( // Tampilkan preview gambar baru jika ada
                 <img
                   src={previewImage}
-                  alt="Preview"
+                  alt="Preview Gambar Baru"
                   className="object-cover w-full h-full rounded"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                  }}
                 />
-              ) : oldImage ? (
+              ) : oldImage ? ( // Tampilkan gambar lama jika tidak ada preview gambar baru
                 <div className="relative w-full h-full flex items-center justify-center">
                   <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
-                    Gambar lama, upload untuk mengubah menjadi Gambar baru
+                    Gambar lama, upload untuk mengubah menjadi gambar baru
                   </div>
                   <img
-                    src={oldImage}
-                    alt="Preview"
+                    src={oldImage} // Langsung menggunakan URL Cloudinary dari state
+                    alt="Gambar Lama"
                     className="object-cover w-full h-full rounded opacity-70"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    }}
                   />
                 </div>
               ) : (
+                // Jika tidak ada gambar baru dan tidak ada gambar lama
                 <div className="text-gray-600 font-semibold">
                   Tidak ada gambar untuk ditampilkan
+                  <img
+                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image" // Placeholder jika tidak ada gambar
+                    alt="Placeholder"
+                    className="object-cover w-full h-full rounded opacity-70 mt-4"
+                  />
                 </div>
               )}
             </div>
           </form>
 
+          {/* Footer */}
           <div className="fixed bottom-4 right-4 pb-4 pr-12">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />

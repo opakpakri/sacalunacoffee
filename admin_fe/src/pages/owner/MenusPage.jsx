@@ -8,21 +8,21 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCirclePlus,
   faXmark,
-  faSpinner, // <--- Import faSpinner
-  faTimesCircle, // <--- Import faTimesCircle
+  faSpinner,
+  faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
 function MenusPage() {
   const navigate = useNavigate();
   const [menus, setMenus] = useState([]);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImageUrl, setSelectedImageUrl] = useState("");
+  const [selectedImageUrl, setSelectedImageUrl] = useState(""); // Ini akan menyimpan URL Cloudinary penuh
   const [searchTerm, setSearchTerm] = useState("");
   const [authError, setAuthError] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false); // <--- State baru untuk loading pencarian
-  const [initialLoading, setInitialLoading] = useState(true); // <--- State baru untuk loading awal
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true); // Default true agar spinner tampil di awal
+  const [dataError, setDataError] = useState(null); // State baru untuk error data umum
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -62,13 +62,10 @@ function MenusPage() {
     [navigate]
   );
 
-  // Bungkus fetchMenus dengan useCallback
   const fetchMenus = useCallback(async () => {
+    setDataError(null); // Reset error data umum
+    setAuthError(null); // Reset authError
     const token = localStorage.getItem("adminToken");
-    console.log(
-      "Mengambil menu dengan token:",
-      token ? "Token ada" : "Token tidak ada"
-    );
 
     try {
       const res = await fetch(
@@ -86,74 +83,105 @@ function MenusPage() {
       }
 
       const data = await res.json();
-      setMenus(data.data);
-      setAuthError(null);
+      // Pastikan data.data adalah array yang valid (sesuai respons Anda di getAllMenus)
+      if (data && Array.isArray(data.data)) {
+        setMenus(data.data);
+      } else {
+        setDataError("Struktur data menu tidak valid.");
+        setMenus([]);
+      }
     } catch (error) {
       console.error(
         "Gagal memuat menu (kesalahan jaringan atau tak tertangani):",
         error
       );
-      setAuthError(
+      setDataError(
         "Gagal memuat daftar menu. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
+    } finally {
+      setInitialLoading(false); // Matikan loading awal
+      setSearchLoading(false); // Matikan loading pencarian
     }
-  }, [handleAuthenticationError]); // handleAuthenticationError adalah dependency fetchMenus
+  }, [handleAuthenticationError]);
 
-  // Effect untuk loading awal
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (!token || user?.role !== "Admin") {
       if (!token) {
-        alert("Anda tidak memiliki akses. Silakan login kembali.");
+        console.warn("Anda tidak memiliki akses. Silakan login kembali.");
       }
       localStorage.clear();
       navigate("/");
       return;
     }
 
-    const loadMenusData = async () => {
-      setInitialLoading(true); // Aktifkan loading awal
-      await fetchMenus();
-      setInitialLoading(false); // Matikan loading awal setelah fetch
-    };
+    // Panggil fetchMenus saat komponen pertama kali dimuat
+    fetchMenus();
+  }, [navigate, fetchMenus]);
 
-    loadMenusData();
-  }, [navigate, fetchMenus]); // navigate dan fetchMenus adalah dependency
-
-  // Effect untuk pencarian (dengan Debounce)
   useEffect(() => {
-    // Hanya aktifkan debounce setelah loading awal selesai
     if (!initialLoading) {
-      const delayDebounceFn = setTimeout(async () => {
-        setSearchLoading(true); // Aktifkan loading pencarian
-        await fetchMenus(); // Panggil ulang fetchMenus untuk pencarian
-        setSearchLoading(false); // Matikan loading pencarian
-      }, 500); // Debounce 500ms
+      const delayDebounceFn = setTimeout(() => {
+        setSearchLoading(true);
+        fetchMenus();
+      }, 500);
 
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [searchTerm, fetchMenus, initialLoading]); // searchTerm, fetchMenus, dan initialLoading sebagai dependency
+  }, [searchTerm, fetchMenus, initialLoading]);
 
   const filteredMenus = menus.filter(
     (menu) =>
       menu.name_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
       menu.category_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      (menu.price &&
+        menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase())) // Pastikan price ada sebelum toString()
   );
 
-  const openImageModal = (imageName) => {
-    console.log("Buka gambar:", imageName);
-    setSelectedImageUrl(
-      `https://sacalunacoffee-production.up.railway.app${imageName}`
-    );
+  const openImageModal = (imageUrl) => {
+    // imageUrl sudah berupa URL Cloudinary penuh
+    setSelectedImageUrl(imageUrl);
     setShowImageModal(true);
   };
 
   const closeImageModal = () => {
     setShowImageModal(false);
     setSelectedImageUrl("");
+  };
+
+  // Handle delete menu
+  const handleDelete = async (id_menu, name_menu) => {
+    const confirmed = window.confirm(
+      `Yakin ingin menghapus menu "${name_menu}"?`
+    );
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("adminToken");
+    try {
+      const res = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/menus/${id_menu}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        await handleAuthenticationError(res);
+        return;
+      }
+
+      const data = await res.json();
+      alert(data.message);
+      fetchMenus(); // Refresh daftar menu
+    } catch (err) {
+      console.error("Error deleting menu:", err);
+      alert("Gagal menghapus menu.");
+    }
   };
 
   return (
@@ -191,16 +219,18 @@ function MenusPage() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 text-left">
                   <th className="p-3 w-[5%] text-center">No</th>
-                  <th className="p-3 w-[35%]">Name Menu</th>
+                  <th className="p-3 w-[25%]">Name Menu</th>{" "}
+                  {/* Adjusted width */}
                   <th className="p-3 w-[15%]">Category</th>
                   <th className="p-3 w-[15%]">Price</th>
-                  <th className="p-3 w-[15%]">Image</th>
-                  <th className="p-3 w-[12.5%] text-center">Action</th>
+                  <th className="p-3 w-[20%]">Image</th>{" "}
+                  {/* Adjusted width for thumbnail */}
+                  <th className="p-3 w-[20%] text-center">Action</th>{" "}
+                  {/* Adjusted width */}
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {/* Tampilkan loading awal atau loading pencarian */}
-                {initialLoading || searchLoading ? (
+                {(initialLoading || searchLoading) && menus.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
@@ -215,14 +245,14 @@ function MenusPage() {
                       </p>
                     </td>
                   </tr>
-                ) : authError && !initialLoading && !searchLoading ? ( // Tampilkan error umum jika ada dan bukan karena loading
+                ) : dataError ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
                         className="text-3xl text-red-500 mb-4"
                       />
-                      <p>{authError}</p>
+                      <p>{dataError}</p>
                     </td>
                   </tr>
                 ) : filteredMenus.length === 0 ? (
@@ -235,37 +265,48 @@ function MenusPage() {
                   filteredMenus.map((menu, index) => (
                     <tr key={menu.id_menu} className="hover:bg-gray-100">
                       <td className="p-3 text-center">{index + 1}</td>
-                      <td className="p-3 ">{menu.name_menu}</td>
-                      <td className="p-3 ">{menu.category_menu}</td>
-                      <td className="p-3 w-[170px]">
-                        Rp {menu.price.toLocaleString()}
-                      </td>
-                      <td className="p-3 ">
-                        <button
-                          onClick={() => openImageModal(menu.image_menu)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Review Image
-                        </button>
+                      <td className="p-3">{menu.name_menu}</td>
+                      <td className="p-3">{menu.category_menu}</td>
+                      <td className="p-3">Rp {menu.price.toLocaleString()}</td>
+                      <td className="p-3 text-center">
+                        {menu.image_menu ? (
+                          <img
+                            src={menu.image_menu} // Langsung gunakan URL Cloudinary
+                            alt="Menu Thumbnail"
+                            className="w-16 h-16 object-cover rounded-md mx-auto cursor-pointer"
+                            onClick={() => openImageModal(menu.image_menu)}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://placehold.co/64x64/cccccc/000000?text=Error";
+                            }}
+                          />
+                        ) : (
+                          <span className="text-gray-500">No Image</span>
+                        )}
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-8 justify-center items-center">
+                        <div className="flex gap-4 justify-center items-center">
                           <button
                             onClick={() =>
                               navigate(`/menus/edit-menu/${menu.id_menu}`)
                             }
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                            title="Edit Menu"
+                            aria-label={`Edit menu ${menu.name_menu}`}
                           >
                             <FaEdit className="w-5 h-5" />
                           </button>
-                          {/* <button
+                          <button
                             onClick={() =>
                               handleDelete(menu.id_menu, menu.name_menu)
                             }
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                            title="Hapus Menu"
+                            aria-label={`Hapus menu ${menu.name_menu}`}
                           >
                             <FaTrash className="w-5 h-5" />
-                          </button> */}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -278,13 +319,11 @@ function MenusPage() {
           <div>
             <button
               onClick={() => navigate("/menus/add-menu")}
-              className="w-50 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-2 rounded-lg font-bold transition duration-200 mt-4 flex items-center justify-center gap-4"
+              className="w-auto mt-6 px-6 py-3 bg-black text-white rounded-lg font-bold text-lg shadow-md
+                  hover:bg-yellow-600 hover:text-black transition-colors duration-200 flex items-center justify-center gap-3"
             >
-              <FontAwesomeIcon
-                icon={faCirclePlus}
-                className="group-hover:text-black text-lg"
-              />
-              Add Menu
+              <FontAwesomeIcon icon={faCirclePlus} className="text-xl" />
+              <span>Add Menu</span>
             </button>
           </div>
 
@@ -296,10 +335,11 @@ function MenusPage() {
           </div>
         </div>
       </div>
+
       {showImageModal && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50"
-          onClick={() => setShowImageModal(false)}
+          onClick={closeImageModal}
         >
           <div
             className="bg-white p-8 rounded-lg shadow-lg max-w-lg w-full relative"
@@ -307,14 +347,19 @@ function MenusPage() {
           >
             <button
               onClick={closeImageModal}
-              className="absolute top-2 right-4 text-gray-600 hover:text-black text-xl font-bold"
+              className="absolute top-3 right-4 text-gray-600 hover:text-black text-xl font-bold"
             >
-              <FontAwesomeIcon icon={faXmark} className="text-xl" />
+              <FontAwesomeIcon icon={faXmark} className="text-2xl" />
             </button>
             <img
-              src={selectedImageUrl}
-              alt="Menu"
-              className="w-full h-auto object-contain rounded"
+              src={selectedImageUrl} // Menggunakan URL Cloudinary langsung
+              alt="Menu Full"
+              className="w-full h-auto object-contain rounded max-h-[80vh]"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src =
+                  "https://placehold.co/400x300/cccccc/000000?text=Image+Load+Error";
+              }}
             />
           </div>
         </div>

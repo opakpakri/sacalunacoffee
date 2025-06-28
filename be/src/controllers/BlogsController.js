@@ -1,4 +1,3 @@
-// src/controllers/BlogsController.js (Pastikan ini yang Anda gunakan)
 const pool = require("../config/db");
 const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
 
@@ -17,12 +16,11 @@ const getAllBlogs = async (req, res) => {
 const addBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const imageUrl = req.file?.path; // Dapatkan URL gambar dari Cloudinary
+    // req.file?.path akan berisi URL gambar dari Cloudinary
+    const imageUrl = req.file?.path;
 
     if (!title || !content || !imageUrl) {
-      // Pastikan imageUrl ada
-      // Jika ada file yang terupload ke Cloudinary tapi ada validasi gagal, hapus gambar tersebut.
-      // public_id disimpan di req.file.filename atau req.file.public_id
+      // Jika ada gambar yang terupload ke Cloudinary tapi validasi gagal, hapus gambar tersebut
       if (req.file && req.file.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
@@ -31,9 +29,10 @@ const addBlog = async (req, res) => {
         .json({ message: "Semua field harus diisi, termasuk gambar" });
     }
 
+    // Simpan URL Cloudinary ke database
     await pool.query(
       "INSERT INTO blogs (title, content, image_blog) VALUES (?, ?, ?)",
-      [title, content, imageUrl] // Simpan URL Cloudinary ke database
+      [title, content, imageUrl]
     );
 
     res
@@ -41,7 +40,7 @@ const addBlog = async (req, res) => {
       .json({ message: "Blog berhasil ditambahkan", imageUrl: imageUrl });
   } catch (err) {
     console.error("Error adding blog:", err.message);
-    // Jika ada file yang terupload ke Cloudinary sebelum error DB, hapus juga
+    // Jika ada gambar yang terupload ke Cloudinary sebelum error DB, hapus juga
     if (req.file && req.file.public_id) {
       try {
         await cloudinary.uploader.destroy(req.file.public_id);
@@ -63,14 +62,16 @@ const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    const newImageUrl = req.file?.path; // Dapatkan URL gambar baru dari Cloudinary
+    // Dapatkan URL gambar baru dari Cloudinary (jika ada upload baru)
+    const newImageUrl = req.file?.path;
 
     const [oldData] = await pool.query(
-      "SELECT image_blog FROM blogs WHERE id_blog = ?", // Hanya perlu image_blog
+      "SELECT image_blog FROM blogs WHERE id_blog = ?",
       [id]
     );
+
     if (oldData.length === 0) {
-      // Jika ada gambar baru terupload ke Cloudinary, hapus jika blog tidak ditemukan
+      // Jika blog tidak ditemukan tapi ada gambar baru terupload, hapus gambar baru tersebut
       if (newImageUrl && req.file?.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
@@ -79,15 +80,15 @@ const updateBlog = async (req, res) => {
 
     const oldImageUrl = oldData[0].image_blog;
 
-    // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru
+    // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru yang diunggah
     if (newImageUrl && oldImageUrl) {
-      // Pastikan ada URL lama dan baru
       try {
-        // Ekstrak public_id dari oldImageUrl
+        // Ekstrak public_id dari oldImageUrl untuk menghapusnya dari Cloudinary
+        // Regex ini menangani format URL Cloudinary dan mendapatkan folder/public_id
         const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
-          await cloudinary.uploader.destroy(publicId); // Hapus dari Cloudinary
+          await cloudinary.uploader.destroy(publicId);
           console.log(
             `Gambar lama berhasil dihapus dari Cloudinary: ${publicId}`
           );
@@ -101,11 +102,12 @@ const updateBlog = async (req, res) => {
           "Error deleting old image from Cloudinary:",
           deleteErr.message
         );
+        // Lanjutkan update DB meskipun gagal menghapus gambar lama di Cloudinary
       }
     }
 
-    // Tentukan URL gambar yang akan disimpan ke DB
-    const imageUrlToSave = newImageUrl || oldImageUrl; // Gunakan gambar baru jika ada, jika tidak, pertahankan yang lama
+    // Tentukan URL gambar yang akan disimpan ke DB: gunakan yang baru jika ada, jika tidak, pertahankan yang lama
+    const imageUrlToSave = newImageUrl || oldImageUrl;
 
     await pool.query(
       `
@@ -158,12 +160,13 @@ const deleteBlog = async (req, res) => {
     // Hapus gambar dari Cloudinary jika ada
     if (imageUrlToDelete) {
       try {
+        // Ekstrak public_id dari URL Cloudinary untuk menghapusnya
         const publicIdMatch = imageUrlToDelete.match(
           /\/upload\/\w+\/(.+)\.\w+$/
         );
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
-          await cloudinary.uploader.destroy(publicId); // Hapus dari Cloudinary
+          await cloudinary.uploader.destroy(publicId);
           console.log(`Gambar berhasil dihapus dari Cloudinary: ${publicId}`);
         } else {
           console.warn(
@@ -175,6 +178,7 @@ const deleteBlog = async (req, res) => {
           "Error deleting image from Cloudinary:",
           deleteErr.message
         );
+        // Lanjutkan penghapusan DB meskipun gagal menghapus gambar dari Cloudinary
       }
     }
 

@@ -15,8 +15,8 @@ function EditBlogsPage() {
     content: "",
     image: null, // File objek untuk upload baru
   });
-  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru
-  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database
+  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru (lokal)
+  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database (Cloudinary URL)
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -83,7 +83,7 @@ function EditBlogsPage() {
       setForm({
         title: blog.title || "",
         content: blog.content || "",
-        image: null, // Reset file input
+        image: null, // Reset file input saat fetch
       });
       // Langsung gunakan URL dari database karena sudah URL Cloudinary penuh
       setOldImage(blog.image_blog);
@@ -114,7 +114,12 @@ function EditBlogsPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      setPreviewImage(URL.createObjectURL(file)); // Buat URL lokal untuk preview
+      // Buat URL objek lokal untuk preview gambar yang baru dipilih
+      if (file) {
+        setPreviewImage(URL.createObjectURL(file));
+      } else {
+        setPreviewImage(null); // Hapus preview jika file dibatalkan
+      }
       setOldImage(null); // Hapus gambar lama dari tampilan preview jika ada gambar baru
     } else {
       setForm({ ...form, [name]: value });
@@ -132,6 +137,7 @@ function EditBlogsPage() {
     if (form.image) {
       formData.append("image", form.image); // Hanya tambahkan gambar jika ada yang baru dipilih
     }
+    // Tidak perlu append oldImage jika Anda tidak ingin mengirimnya ke backend
 
     try {
       const token = localStorage.getItem("adminToken");
@@ -149,8 +155,9 @@ function EditBlogsPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        alert(errorData.message || "Gagal memperbarui berita."); // Tampilkan pesan error dari backend
+        const errorData = await response.json(); // Coba parsing error JSON
+        // Menangani error spesifik dari backend (misalnya konflik nama) atau error umum
+        alert(errorData.message || "Gagal memperbarui berita.");
         await handleAuthenticationError(response); // Fallback ke penanganan error umum
         return;
       }
@@ -235,7 +242,7 @@ function EditBlogsPage() {
                   type="submit"
                   disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                   disabled:opacity-50 disabled:cursor-not-allowed"
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -255,26 +262,42 @@ function EditBlogsPage() {
             </div>
 
             <div className="flex-1 flex items-center justify-center relative">
-              {previewImage ? (
+              {previewImage ? ( // Tampilkan preview gambar baru jika ada
                 <img
                   src={previewImage}
-                  alt="Preview"
+                  alt="Preview Gambar Baru"
                   className="object-cover w-full h-full rounded"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                  }} // Fallback image
                 />
-              ) : oldImage ? (
+              ) : oldImage ? ( // Tampilkan gambar lama jika tidak ada preview gambar baru
                 <div className="relative w-full h-full flex items-center justify-center">
                   <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
                     Gambar lama, upload untuk mengubah menjadi gambar baru
                   </div>
                   <img
                     src={oldImage} // Langsung menggunakan URL Cloudinary dari state
-                    alt="Preview"
+                    alt="Gambar Lama"
                     className="object-cover w-full h-full rounded opacity-70"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    }} // Fallback image
                   />
                 </div>
               ) : (
+                // Jika tidak ada gambar baru dan tidak ada gambar lama
                 <div className="text-gray-600 font-semibold">
                   Tidak ada gambar untuk ditampilkan
+                  <img
+                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image" // Placeholder jika tidak ada gambar
+                    alt="Placeholder"
+                    className="object-cover w-full h-full rounded opacity-70 mt-4"
+                  />
                 </div>
               )}
             </div>

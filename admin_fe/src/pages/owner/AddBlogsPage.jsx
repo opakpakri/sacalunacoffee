@@ -5,16 +5,19 @@ import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import oldImage from "../../assets/images/signImage.webp"; // Menggunakan ini sebagai placeholder
+
+// oldImage ini biasanya hanya untuk placeholder awal, tidak diimport jika dari DB
+// Anda bisa menggunakan placeholder.co atau membuat SVG/component placeholder sendiri
+// import oldImage from "../../assets/images/signImage.webp";
 
 function AddBlogsPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
     content: "",
-    image: null,
+    image: null, // File objek untuk upload
   });
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null); // URL lokal untuk preview gambar baru
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -76,7 +79,12 @@ function AddBlogsPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      setPreviewImage(URL.createObjectURL(file));
+      // Buat URL objek lokal untuk preview gambar yang baru dipilih
+      if (file) {
+        setPreviewImage(URL.createObjectURL(file));
+      } else {
+        setPreviewImage(null); // Hapus preview jika file dibatalkan
+      }
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -115,10 +123,8 @@ function AddBlogsPage() {
       );
 
       if (!response.ok) {
-        // Ini akan menangani 400 (semua field harus diisi) dan error otentikasi
-        const errorData = await response.json();
-        // Anda bisa menambahkan penanganan error spesifik di sini jika backend mengirim pesan error yang berbeda
-        alert(errorData.message || "Gagal menambahkan blog.");
+        const errorData = await response.json(); // Coba parsing error JSON dari backend
+        alert(errorData.message || "Gagal menambahkan blog."); // Tampilkan pesan error dari backend
         await handleAuthenticationError(response); // Fallback untuk penanganan otentikasi/server error
         return;
       }
@@ -184,7 +190,7 @@ function AddBlogsPage() {
 
               <div className="flex flex-col">
                 <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
+                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus:ring-yellow-500">
                   <span>
                     {form.image ? form.image.name : "Pilih gambar..."}
                   </span>
@@ -203,7 +209,7 @@ function AddBlogsPage() {
                   type="submit"
                   disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                   disabled:opacity-50 disabled:cursor-not-allowed"
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -228,6 +234,11 @@ function AddBlogsPage() {
                   src={previewImage}
                   alt="Preview"
                   className="object-cover w-full h-full rounded"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                  }} // Fallback image for preview
                 />
               ) : (
                 <div className="relative w-full h-full flex items-center justify-center">
@@ -235,8 +246,9 @@ function AddBlogsPage() {
                     Gambar preview akan muncul di sini setelah upload
                   </div>
 
+                  {/* Menggunakan placeholder.co sebagai gambar fallback, bukan oldImage lokal */}
                   <img
-                    src={oldImage} // Menggunakan gambar placeholder lokal
+                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image"
                     alt="Placeholder"
                     className="object-cover w-full h-full rounded opacity-70"
                   />

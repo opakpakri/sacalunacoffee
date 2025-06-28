@@ -64,9 +64,8 @@ function BlogsPage() {
   );
 
   const fetchBlogs = useCallback(async () => {
-    // setSearchLoading(true) atau setInitialLoading(true) sudah diatur di tempat pemanggilan
     setDataError(null);
-    setAuthError(null); // Reset authError saat fetch dimulai
+    setAuthError(null);
     const token = localStorage.getItem("adminToken");
 
     try {
@@ -80,19 +79,16 @@ function BlogsPage() {
       );
 
       if (!res.ok) {
-        // Jika respons tidak OK, handle sebagai error autentikasi atau server
         await handleAuthenticationError(res);
-        return; // Hentikan eksekusi jika ada error autentikasi
+        return;
       }
 
       const data = await res.json();
-      // Pastikan data.data adalah array yang valid
       if (data && Array.isArray(data.data)) {
         setBlogs(data.data);
       } else {
-        // Jika struktur data tidak sesuai, set error
         setDataError("Struktur data blog tidak valid.");
-        setBlogs([]); // Pastikan state blogs kosong
+        setBlogs([]);
       }
     } catch (error) {
       console.error(
@@ -102,8 +98,11 @@ function BlogsPage() {
       setDataError(
         "Gagal memuat daftar blog. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
+    } finally {
+      // Pastikan loading dihentikan setelah fetch selesai, baik berhasil atau gagal
+      setInitialLoading(false); // Untuk loading awal
+      setSearchLoading(false); // Untuk loading pencarian
     }
-    // loading state diatur di useEffect debounce atau loadBlogsData
   }, [handleAuthenticationError]);
 
   useEffect(() => {
@@ -112,7 +111,6 @@ function BlogsPage() {
 
     if (!token || user?.role !== "Admin") {
       if (!token) {
-        // Mengganti alert() dengan pesan di console atau UI jika memungkinkan
         console.warn("Anda tidak memiliki akses. Silakan login kembali.");
       }
       localStorage.clear();
@@ -120,22 +118,20 @@ function BlogsPage() {
       return;
     }
 
-    const loadBlogsData = async () => {
-      setInitialLoading(true);
-      await fetchBlogs();
-      setInitialLoading(false);
-    };
-
-    loadBlogsData();
+    // Hanya panggil fetchBlogs jika belum ada loading aktif
+    if (!initialLoading && !searchLoading) {
+      setInitialLoading(true); // Aktifkan loading awal sebelum fetch
+      fetchBlogs();
+    }
+    // Hapus baris loadBlogsData() karena sudah ditangani di fetchBlogs.finally
   }, [navigate, fetchBlogs]);
 
   useEffect(() => {
+    // Hanya aktifkan debounce setelah loading awal selesai
     if (!initialLoading) {
-      // Hanya aktifkan debounce setelah loading awal selesai
       const delayDebounceFn = setTimeout(() => {
         setSearchLoading(true); // Aktifkan loading pencarian
         fetchBlogs(); // Panggil ulang fetchBlogs untuk pencarian
-        // setSearchLoading(false) akan diatur oleh fetchBlogs atau setelahnya jika perlu
       }, 500); // Debounce 500ms
 
       return () => clearTimeout(delayDebounceFn);
@@ -182,7 +178,7 @@ function BlogsPage() {
       }
 
       const data = await res.json();
-      alert(data.message); // Tetap menggunakan alert untuk pesan sukses/error spesifik
+      alert(data.message);
       fetchBlogs(); // Refresh daftar blog
     } catch (err) {
       console.error("Error deleting blog:", err);
@@ -225,16 +221,15 @@ function BlogsPage() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 text-left">
                   <th className="p-3 w-[5%] text-center">No</th>
-                  <th className="p-3 w-[30%]">Title</th> {/* Adjusted width */}
-                  <th className="p-3 w-[30%]">Content</th>{" "}
-                  {/* Adjusted width */}
-                  <th className="p-3 w-[15%]">Image</th>{" "}
-                  {/* Adjusted width for thumbnail */}
-                  <th className="p-3 w-[20%]">Action</th> {/* Adjusted width */}
+                  <th className="p-3 w-[35%]">Title</th>
+                  <th className="p-3 w-[35%]">Content</th>
+                  <th className="p-3 w-[12.5%]">Image</th>
+                  <th className="p-3 w-[12.5%]">Action</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {initialLoading || searchLoading ? (
+                {/* Menampilkan loading/error HANYA jika data belum ada atau sedang di-fetch */}
+                {(initialLoading || searchLoading) && !blogs.length ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
@@ -266,13 +261,14 @@ function BlogsPage() {
                     </td>
                   </tr>
                 ) : (
+                  // Data berhasil dimuat, tampilkan tabel
                   filteredBlogs.map((blog, index) => (
                     <tr key={blog.id_blog} className="hover:bg-gray-100 ">
                       <td className="p-3 text-center">{index + 1}</td>
                       <td className="p-3">
                         <button
                           onClick={() => openModal("title", blog.title)}
-                          className="line-clamp-1 text-left" // Added text-left
+                          className="line-clamp-1 text-left"
                         >
                           {blog.title}
                         </button>
@@ -286,34 +282,26 @@ function BlogsPage() {
                         </button>
                       </td>
                       <td className="p-3 text-center">
-                        {" "}
-                        {/* Centered content for image column */}
+                        {/* Kembali ke 'Review Image' di tabel */}
                         {blog.image_blog ? (
-                          <img
-                            src={blog.image_blog} // Langsung gunakan URL Cloudinary
-                            alt="Blog Thumbnail"
-                            className="w-16 h-16 object-cover rounded-md mx-auto cursor-pointer" // Thumbnail styling
+                          <button
                             onClick={() => openModal("image", blog.image_blog)}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src =
-                                "https://placehold.co/64x64/cccccc/000000?text=Error";
-                            }} // Fallback image on error
-                          />
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            Review Image
+                          </button>
                         ) : (
                           <span className="text-gray-500">No Image</span>
                         )}
                       </td>
                       <td className="p-3">
                         <div className="flex justify-center items-center gap-4">
-                          {" "}
-                          {/* Centered action buttons */}
                           <button
                             onClick={() =>
                               navigate(`/blogs/edit-blog/${blog.id_blog}`)
                             }
                             className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                            title="Edit Blog" // Added title for tooltip
+                            title="Edit Blog"
                             aria-label={`Edit blog ${blog.title}`}
                           >
                             <FaEdit className="w-5 h-5" />
@@ -323,7 +311,7 @@ function BlogsPage() {
                               handleDelete(blog.id_blog, blog.title)
                             }
                             className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
-                            title="Hapus Blog" // Added title for tooltip
+                            title="Hapus Blog"
                             aria-label={`Hapus blog ${blog.title}`}
                           >
                             <FaTrash className="w-5 h-5" />
@@ -341,10 +329,10 @@ function BlogsPage() {
             <button
               onClick={() => navigate("/blogs/add-blog")}
               className="w-auto mt-6 px-6 py-3 bg-black text-white rounded-lg font-bold text-lg shadow-md
-                  hover:bg-yellow-600 hover:text-black transition-colors duration-200 flex items-center justify-center gap-3" // Adjusted width from w-50 to w-auto, increased padding
+                  hover:bg-yellow-600 hover:text-black transition-colors duration-200 flex items-center justify-center gap-3"
             >
               <FontAwesomeIcon icon={faCirclePlus} className="text-xl" />
-              <span>Add Blog</span> {/* Added span for better alignment */}
+              <span>Add Blog</span>
             </button>
           </div>
 
@@ -368,27 +356,26 @@ function BlogsPage() {
           >
             <button
               onClick={closeModal}
-              className="absolute top-3 right-4 text-gray-600 hover:text-black text-xl font-bold" // Adjusted top for better positioning
+              className="absolute top-3 right-4 text-gray-600 hover:text-black text-xl font-bold"
             >
-              <FontAwesomeIcon icon={faXmark} className="text-2xl" />{" "}
-              {/* Larger X icon */}
+              <FontAwesomeIcon icon={faXmark} className="text-2xl" />
             </button>
 
             {modalType === "image" ? (
               <img
-                src={modalContent} // Ini sudah benar, menggunakan URL Cloudinary langsung
+                src={modalContent}
                 alt="Blog"
-                className="w-full h-auto object-contain rounded max-h-[80vh]" // Added max-h to prevent overflow
+                className="w-full h-auto object-contain rounded max-h-[80vh]"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src =
                     "https://placehold.co/400x300/cccccc/000000?text=Image+Load+Error";
-                }} // Fallback for modal image
+                }}
               />
             ) : (
               <p className="whitespace-pre-wrap text-justify text-gray-800">
                 {modalContent}
-              </p> // Added text-gray-800 for readability
+              </p>
             )}
           </div>
         </div>

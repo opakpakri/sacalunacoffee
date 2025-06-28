@@ -5,19 +5,22 @@ import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+// import oldImage dari aset lokal Anda
+import oldImage from "../../assets/images/signImage.webp"; // Pastikan path ini benar
 
-// oldImage ini biasanya hanya untuk placeholder awal, tidak diimport jika dari DB
-// Anda bisa menggunakan placeholder.co atau membuat SVG/component placeholder sendiri
-// import oldImage from "../../assets/images/signImage.webp";
-
-function AddBlogsPage() {
+function AddMenusPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    title: "",
-    content: "",
-    image: null, // File objek untuk upload
+    name_menu: "",
+    price: "",
+    category: "",
+    image: null,
   });
-  const [previewImage, setPreviewImage] = useState(null); // URL lokal untuk preview gambar baru
+  const [previewImage, setPreviewImage] = useState(null);
+  const [drinkType, setDrinkType] = useState("");
+  const isDrinkCategory = !["Pastry", "Main Course", "Snacks"].includes(
+    form.category
+  );
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -31,7 +34,7 @@ function AddBlogsPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (AddBlogsPage):",
+        "Detail Error Autentikasi (AddMenusPage):",
         errorData,
         "Status HTTP:",
         res.status
@@ -101,39 +104,41 @@ function AddBlogsPage() {
       return;
     }
 
+    let updatedName = form.name_menu;
+    if (isDrinkCategory) {
+      if (drinkType) {
+        updatedName = `${drinkType} ${form.name_menu}`;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("title", form.title);
-    formData.append("content", form.content);
-    formData.append("image", form.image); // File gambar ditambahkan ke FormData
+    formData.append("name_menu", updatedName);
+    formData.append("price", form.price);
+    formData.append("category", form.category);
+    formData.append("image", form.image);
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        "https://sacalunacoffee-production.up.railway.app/api/blogs",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // Penting: JANGAN SET 'Content-Type': 'application/json'
-            // saat mengirim FormData. Browser akan mengaturnya secara otomatis
-            // dengan boundary yang benar.
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch("http://localhost:3000/api/menus", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
       if (!response.ok) {
-        const errorData = await response.json(); // Coba parsing error JSON dari backend
-        alert(errorData.message || "Gagal menambahkan blog."); // Tampilkan pesan error dari backend
-        await handleAuthenticationError(response); // Fallback untuk penanganan otentikasi/server error
+        const errorData = await response.json();
+        alert(errorData.message || "Gagal menambahkan menu.");
+        await handleAuthenticationError(response);
         return;
       }
 
-      alert("Blog berhasil ditambahkan");
-      navigate("/blogs");
+      alert("Menu berhasil ditambahkan");
+      navigate("/menus");
     } catch (error) {
-      console.error("Error saat menambahkan blog:", error);
-      setAuthError("Terjadi kesalahan saat menambahkan blog: " + error.message);
+      console.error("Error saat menambahkan menu:", error);
+      setAuthError("Terjadi kesalahan saat menambahkan menu: " + error.message);
     } finally {
       setSubmitLoading(false);
     }
@@ -145,7 +150,7 @@ function AddBlogsPage() {
       <div className="flex flex-1">
         <SidebarAdmin />
         <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Add New Blog</h1>
+          <h1 className="text-2xl font-bold mb-8">Add New Menu</h1>
 
           {authError && (
             <div
@@ -160,16 +165,16 @@ function AddBlogsPage() {
           <form
             onSubmit={handleSubmit}
             className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
-            encType="multipart/form-data" // Penting untuk upload file
+            encType="multipart/form-data"
           >
             <div className="flex-1 p-12 space-y-6 relative">
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Title</label>
+                <label className="text-lg font-bold mb-1">Nama Menu</label>
                 <input
-                  name="title"
+                  name="name_menu"
                   type="text"
-                  placeholder="Masukkan judul blog"
-                  value={form.title}
+                  placeholder="Masukkan nama menu"
+                  value={form.name_menu}
                   onChange={handleChange}
                   className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   required
@@ -177,20 +182,71 @@ function AddBlogsPage() {
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Content</label>
-                <textarea
-                  name="content"
-                  placeholder="Tulis konten blog di sini..."
-                  value={form.content}
+                <label className="text-lg font-bold mb-1">Harga</label>
+                <input
+                  name="price"
+                  type="number"
+                  placeholder="Masukkan harga menu"
+                  value={form.price}
                   onChange={handleChange}
-                  className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 min-h-[200px] resize-none"
+                  className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
+                <label className="text-lg font-bold mb-1">Kategori</label>
+                <div className="relative">
+                  <select
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    className="appearance-none w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    required
+                  >
+                    <option disabled value="">
+                      Pilih Kategori
+                    </option>
+                    <option value="Pure Coffee">Pure Coffee</option>
+                    <option value="White">White</option>
+                    <option value="Milky">Milky</option>
+                    <option value="Signature">Signature</option>
+                    <option value="Mocktail">Mocktail</option>
+                    <option value="Easy To Drink">Easy To Drink</option>
+                    <option value="Pastry">Pastry</option>
+                    <option value="Main Course">Main Course</option>
+                    <option value="Snacks">Snacks</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-600">
+                    {/* <FaChevronDown className="w-4 h-4" /> Ini biasanya untuk icon di select*/}
+                  </div>
+                </div>
+              </div>
+
+              {isDrinkCategory && (
+                <div className="flex flex-col">
+                  <label className="text-lg font-bold mb-1">Tipe Minuman</label>
+                  <div className="relative">
+                    <select
+                      name="drinkType"
+                      value={drinkType}
+                      onChange={(e) => setDrinkType(e.target.value)}
+                      className="appearance-none w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="">Default</option>
+                      <option value="Iced">Iced</option>
+                      <option value="Hot">Hot</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-600">
+                      {/* <FaChevronDown className="w-4 h-4" /> */}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col">
                 <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus:ring-yellow-500">
+                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
                   <span>
                     {form.image ? form.image.name : "Pilih gambar..."}
                   </span>
@@ -223,7 +279,7 @@ function AddBlogsPage() {
                       className="group-hover:text-black text-lg"
                     />
                   )}
-                  {submitLoading ? "Menambahkan..." : "Add Blog"}{" "}
+                  {submitLoading ? "Menambahkan..." : "Add Menu"}{" "}
                 </button>
               </div>
             </div>
@@ -246,11 +302,16 @@ function AddBlogsPage() {
                     Gambar preview akan muncul di sini setelah upload
                   </div>
 
-                  {/* Menggunakan placeholder.co sebagai gambar fallback, bukan oldImage lokal */}
+                  {/* Menggunakan oldImage sebagai placeholder lokal */}
                   <img
-                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image"
+                    src={oldImage} // Placeholder lokal dari import
                     alt="Placeholder"
                     className="object-cover w-full h-full rounded opacity-70"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    }} // Fallback for placeholder itself
                   />
                 </div>
               )}
@@ -269,4 +330,4 @@ function AddBlogsPage() {
   );
 }
 
-export default AddBlogsPage;
+export default AddMenusPage;

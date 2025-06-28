@@ -21,7 +21,7 @@ function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [authError, setAuthError] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // Default true agar spinner tampil di awal
   const [dataError, setDataError] = useState(null);
 
   const handleAuthenticationError = useCallback(
@@ -64,8 +64,10 @@ function BlogsPage() {
   );
 
   const fetchBlogs = useCallback(async () => {
+    // Reset error sebelum fetch dimulai
     setDataError(null);
     setAuthError(null);
+
     const token = localStorage.getItem("adminToken");
 
     try {
@@ -80,7 +82,7 @@ function BlogsPage() {
 
       if (!res.ok) {
         await handleAuthenticationError(res);
-        return;
+        return; // Hentikan eksekusi jika ada error autentikasi
       }
 
       const data = await res.json();
@@ -100,8 +102,8 @@ function BlogsPage() {
       );
     } finally {
       // Pastikan loading dihentikan setelah fetch selesai, baik berhasil atau gagal
-      setInitialLoading(false); // Untuk loading awal
-      setSearchLoading(false); // Untuk loading pencarian
+      setInitialLoading(false);
+      setSearchLoading(false);
     }
   }, [handleAuthenticationError]);
 
@@ -118,12 +120,9 @@ function BlogsPage() {
       return;
     }
 
-    // Hanya panggil fetchBlogs jika belum ada loading aktif
-    if (!initialLoading && !searchLoading) {
-      setInitialLoading(true); // Aktifkan loading awal sebelum fetch
-      fetchBlogs();
-    }
-    // Hapus baris loadBlogsData() karena sudah ditangani di fetchBlogs.finally
+    // Panggil fetchBlogs saat komponen pertama kali dimuat
+    // initialLoading akan diatur ke false di finally block fetchBlogs
+    fetchBlogs();
   }, [navigate, fetchBlogs]);
 
   useEffect(() => {
@@ -229,7 +228,7 @@ function BlogsPage() {
               </thead>
               <tbody className="text-sm">
                 {/* Menampilkan loading/error HANYA jika data belum ada atau sedang di-fetch */}
-                {(initialLoading || searchLoading) && !blogs.length ? (
+                {(initialLoading || searchLoading) && blogs.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
@@ -282,7 +281,6 @@ function BlogsPage() {
                         </button>
                       </td>
                       <td className="p-3 text-center">
-                        {/* Kembali ke 'Review Image' di tabel */}
                         {blog.image_blog ? (
                           <button
                             onClick={() => openModal("image", blog.image_blog)}

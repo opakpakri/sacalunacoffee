@@ -1,6 +1,5 @@
-const fs = require("fs");
 const pool = require("../config/db");
-const path = require("path");
+const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
 
 const getAllBlogs = async (req, res) => {
   try {
@@ -17,21 +16,46 @@ const getAllBlogs = async (req, res) => {
 const addBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    const image = req.file?.filename;
+    // req.file.path akan berisi URL dari Cloudinary
+    const imageUrl = req.file?.path; // Dapatkan URL gambar dari Cloudinary
 
-    if (!title || !content || !image) {
-      return res.status(400).json({ message: "Semua field harus diisi" });
+    if (!title || !content || !imageUrl) {
+      // Pastikan imageUrl ada
+      // Jika ada file yang terupload ke Cloudinary tapi ada validasi gagal, hapus gambar tersebut
+      if (req.file?.public_id) {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      }
+      return res
+        .status(400)
+        .json({ message: "Semua field harus diisi, termasuk gambar" });
     }
 
-    const imagePath = `/uploads/${image}`;
+    // Tidak perlu lagi `imagePath = `/uploads/blogs/${image}``
+    // Langsung gunakan imageUrl dari Cloudinary
     await pool.query(
       "INSERT INTO blogs (title, content, image_blog) VALUES (?, ?, ?)",
-      [title, content, imagePath]
+      [title, content, imageUrl] // Simpan URL Cloudinary ke database
     );
 
-    res.status(201).json({ message: "Blog berhasil ditambahkan" });
+    res
+      .status(201)
+      .json({ message: "Blog berhasil ditambahkan", imageUrl: imageUrl });
   } catch (err) {
     console.error("Error adding blog:", err.message);
+    // Jika ada file yang terupload ke Cloudinary sebelum error DB, hapus juga
+    if (req.file?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(req.file.public_id);
+        console.log(
+          "Gambar yang gagal disimpan ke DB dihapus dari Cloudinary."
+        );
+      } catch (destroyErr) {
+        console.error(
+          "Gagal menghapus gambar dari Cloudinary setelah error DB:",
+          destroyErr.message
+        );
+      }
+    }
     res.status(500).json({ message: "Gagal menambahkan blog" });
   }
 };
@@ -40,33 +64,64 @@ const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    const newImage = req.file?.filename;
+    const newImageUrl = req.file?.path; // Dapatkan URL gambar baru dari Cloudinary
 
     const [oldData] = await pool.query(
-      "SELECT * FROM blogs WHERE id_blog = ?",
+      "SELECT image_blog FROM blogs WHERE id_blog = ?", // Hanya perlu image_blog
       [id]
     );
     if (oldData.length === 0) {
+      // Jika ada gambar baru terupload ke Cloudinary, hapus jika blog tidak ditemukan
+      if (newImageUrl && req.file?.public_id) {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      }
       return res.status(404).json({ message: "Blog tidak ditemukan" });
     }
 
-    if (newImage && oldData[0].image_blog) {
-      const oldImagePath = path.join(__dirname, "..", oldData[0].image_blog);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath);
+    const oldImageUrl = oldData[0].image_blog;
+
+    // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru
+    if (newImageUrl && oldImageUrl) {
+      // Pastikan ada URL lama dan baru
+      try {
+        // Ekstrak public_id dari oldImageUrl
+        // public_id yang kita butuhkan adalah 'sacaluna_blogs/namafileunik'
+        // Regex ini akan mengekstrak folder (sacaluna_blogs) dan nama file unik
+        const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
+        if (publicIdMatch && publicIdMatch[1]) {
+          const publicId = publicIdMatch[1];
+          await cloudinary.uploader.destroy(publicId); // Hapus dari Cloudinary
+          console.log(
+            `Gambar lama berhasil dihapus dari Cloudinary: ${publicId}`
+          );
+        } else {
+          console.warn(
+            `Tidak dapat mengekstrak public_id dari URL lama: ${oldImageUrl}`
+          );
+        }
+      } catch (deleteErr) {
+        console.error(
+          "Error deleting old image from Cloudinary:",
+          deleteErr.message
+        );
+        // Lanjutkan update DB meskipun gagal menghapus gambar lama di Cloudinary
       }
     }
 
-    const imagePath = newImage ? `/uploads/${newImage}` : null;
+    // Tentukan URL gambar yang akan disimpan ke DB
+    const imageUrlToSave = newImageUrl || oldImageUrl; // Gunakan gambar baru jika ada, jika tidak, pertahankan yang lama
+
     await pool.query(
       `
       UPDATE blogs 
-      SET title = ?, content = ?, image_blog = COALESCE(?, image_blog) 
+      SET title = ?, content = ?, image_blog = ? 
       WHERE id_blog = ?`,
-      [title, content, imagePath, id]
+      [title, content, imageUrlToSave, id] // Simpan URL Cloudinary ke database
     );
 
-    res.status(200).json({ message: "Blog berhasil diupdate" });
+    res
+      .status(200)
+      .json({ message: "Blog berhasil diupdate", imageUrl: imageUrlToSave });
   } catch (err) {
     console.error("Error updating blog:", err.message);
     res.status(500).json({ message: "Gagal mengupdate blog" });
@@ -102,13 +157,31 @@ const deleteBlog = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    const imagePath = rows[0].image_blog;
-    if (imagePath) {
-      const fullPath = path.join(__dirname, "..", imagePath);
-      fs.unlink(fullPath, (err) => {
-        if (err) console.error("Error deleting image:", err.message);
-        else console.log("Image deleted:", fullPath);
-      });
+    const imageUrlToDelete = rows[0].image_blog;
+
+    // Hapus gambar dari Cloudinary jika ada
+    if (imageUrlToDelete) {
+      try {
+        // Ekstrak public_id dari URL Cloudinary
+        const publicIdMatch = imageUrlToDelete.match(
+          /\/upload\/\w+\/(.+)\.\w+$/
+        );
+        if (publicIdMatch && publicIdMatch[1]) {
+          const publicId = publicIdMatch[1];
+          await cloudinary.uploader.destroy(publicId); // Hapus dari Cloudinary
+          console.log(`Gambar berhasil dihapus dari Cloudinary: ${publicId}`);
+        } else {
+          console.warn(
+            `Tidak dapat mengekstrak public_id dari URL: ${imageUrlToDelete}`
+          );
+        }
+      } catch (deleteErr) {
+        console.error(
+          "Error deleting image from Cloudinary:",
+          deleteErr.message
+        );
+        // Lanjutkan penghapusan DB meskipun gagal menghapus gambar dari Cloudinary
+      }
     }
 
     await pool.query("DELETE FROM blogs WHERE id_blog = ?", [id]);

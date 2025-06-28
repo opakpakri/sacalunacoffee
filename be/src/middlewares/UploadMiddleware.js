@@ -1,13 +1,28 @@
-// src/middlewares/UploadMiddleware.js
 const cloudinary = require("../config/cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 const path = require("path");
 
+// --- Fungsi format tanggal YYYYMMDD-HHmmss (Ditambahkan dari versi lama) ---
+const formatDate = () => {
+  const d = new Date();
+  const pad = (n) => n.toString().padStart(2, "0");
+
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hour = pad(d.getHours());
+  const minute = pad(d.getMinutes());
+  const second = pad(d.getSeconds());
+
+  return `${year}${month}${day}${hour}${minute}${second}`;
+};
+// --- Akhir penambahan formatDate ---
+
 const getUploadSubfolder = (type) => {
   const folders = {
-    menu: "menus",
-    blog: "blogs",
+    menu: "sacaluna_menus", // Diubah agar sesuai dengan folder di Cloudinary
+    blog: "sacaluna_blogs", // Diubah agar sesuai dengan folder di Cloudinary
   };
   return folders[type] || "sacaluna_uploads";
 };
@@ -18,10 +33,11 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => {
     const subfolder = getUploadSubfolder(req.uploadType);
     const originalFilename = path.parse(file.originalname).name;
+    const timestamp = formatDate(); // Gunakan fungsi formatDate di sini
 
     return {
       folder: subfolder,
-      public_id: `${originalFilename}-${Date.now()}`,
+      public_id: `${originalFilename}-${timestamp}`, // Menggunakan timestamp dari formatDate
       format: "webp",
       transformation: [{ width: 800, height: 600, crop: "limit" }],
     };

@@ -1,55 +1,37 @@
+const cloudinary = require("cloudinary").v2; // Import Cloudinary SDK
+const { CloudinaryStorage } = require("multer-storage-cloudinary"); // Import CloudinaryStorage for Multer
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const path = require("path"); // Still useful for file extensions if you prefer
 
-// Fungsi format tanggal YYYYMMDD-HHmmss
-const formatDate = () => {
-  const d = new Date();
-  const pad = (n) => n.toString().padStart(2, "0");
-
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hour = pad(d.getHours());
-  const minute = pad(d.getMinutes());
-  const second = pad(d.getSeconds());
-
-  return `${year}${month}${day}${hour}${minute}${second}`;
-};
-
-// Tentukan subfolder berdasarkan tipe upload
+// Determine subfolder based on upload type
 const getUploadSubfolder = (type) => {
   const folders = {
-    menu: "menus",
-    blog: "blogs",
+    menu: "sacaluna_menus", // Unique folder in Cloudinary for menus
+    blog: "sacaluna_blogs", // Unique folder in Cloudinary for blogs
   };
-  return folders[type] || "";
+  return folders[type] || "sacaluna_uploads"; // Default folder if type is not recognized
 };
 
-// Konfigurasi storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const subfolder = getUploadSubfolder(req.uploadType);
-    const targetDir = path.join(__dirname, "../uploads", subfolder);
+// Configure Cloudinary storage for Multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const subfolder = getUploadSubfolder(req.uploadType); // Use req.uploadType set by middleware
+    const originalFilename = path.parse(file.originalname).name; // Get filename without extension
 
-    fs.mkdirSync(targetDir, { recursive: true });
-
-    cb(null, targetDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = formatDate();
-    const cleanOriginalName = file.originalname.replace(/\s+/g, "-");
-    const filename = `${timestamp}-${cleanOriginalName}`;
-    cb(null, filename);
+    return {
+      folder: subfolder, // Folder in your Cloudinary account
+      public_id: `${originalFilename}-${Date.now()}`, // Unique public ID for the file
+      format: "webp", // Convert all uploaded images to webp for optimization (recommended)
+      transformation: [{ width: 800, height: 600, crop: "limit" }], // Optional: Apply transformations
+    };
   },
 });
 
-// Filter file hanya terima jpeg, png, dan webp
+// Filter file to only accept jpeg, png, and webp
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = [".jpeg", ".jpg", ".png", ".webp"];
-  const ext = path.extname(file.originalname).toLowerCase();
-
-  if (allowedTypes.includes(ext)) {
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(
@@ -62,6 +44,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limit file size to 5MB (adjust as needed)
+  },
 });
 
 module.exports = upload;

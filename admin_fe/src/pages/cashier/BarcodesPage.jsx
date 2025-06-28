@@ -444,7 +444,7 @@ function BarcodesPage() {
   };
 
   // Base URL untuk QR Code (URL aplikasi frontend Anda)
-  const appBaseUrl = "http://localhost:5173";
+  const appBaseUrl = "https://sacalunacoffee-production.up.railway.app";
 
   return (
     <div className="min-h-screen flex flex-col">

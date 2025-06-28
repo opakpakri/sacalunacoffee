@@ -16,12 +16,12 @@ function MenusPage() {
   const navigate = useNavigate();
   const [menus, setMenus] = useState([]);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImageUrl, setSelectedImageUrl] = useState(""); // Ini akan menyimpan URL Cloudinary penuh
+  const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [authError, setAuthError] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true); // Default true agar spinner tampil di awal
-  const [dataError, setDataError] = useState(null); // State baru untuk error data umum
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [dataError, setDataError] = useState(null); // <-- dataError dideklarasikan di sini
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -63,8 +63,8 @@ function MenusPage() {
   );
 
   const fetchMenus = useCallback(async () => {
-    setDataError(null); // Reset error data umum
-    setAuthError(null); // Reset authError
+    setDataError(null); // Reset dataError di awal fetch
+    setAuthError(null);
     const token = localStorage.getItem("adminToken");
 
     try {
@@ -83,10 +83,10 @@ function MenusPage() {
       }
 
       const data = await res.json();
-      // Pastikan data.data adalah array yang valid (sesuai respons Anda di getAllMenus)
       if (data && Array.isArray(data.data)) {
         setMenus(data.data);
       } else {
+        // Jika struktur data tidak sesuai, set error data
         setDataError("Struktur data menu tidak valid.");
         setMenus([]);
       }
@@ -95,12 +95,13 @@ function MenusPage() {
         "Gagal memuat menu (kesalahan jaringan atau tak tertangani):",
         error
       );
+      // Set error data untuk masalah jaringan atau error tak tertangani lainnya
       setDataError(
         "Gagal memuat daftar menu. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
     } finally {
-      setInitialLoading(false); // Matikan loading awal
-      setSearchLoading(false); // Matikan loading pencarian
+      setInitialLoading(false);
+      setSearchLoading(false);
     }
   }, [handleAuthenticationError]);
 
@@ -117,7 +118,6 @@ function MenusPage() {
       return;
     }
 
-    // Panggil fetchMenus saat komponen pertama kali dimuat
     fetchMenus();
   }, [navigate, fetchMenus]);
 
@@ -137,11 +137,10 @@ function MenusPage() {
       menu.name_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
       menu.category_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (menu.price &&
-        menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase())) // Pastikan price ada sebelum toString()
+        menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const openImageModal = (imageUrl) => {
-    // imageUrl sudah berupa URL Cloudinary penuh
     setSelectedImageUrl(imageUrl);
     setShowImageModal(true);
   };
@@ -151,7 +150,6 @@ function MenusPage() {
     setSelectedImageUrl("");
   };
 
-  // Handle delete menu
   const handleDelete = async (id_menu, name_menu) => {
     const confirmed = window.confirm(
       `Yakin ingin menghapus menu "${name_menu}"?`
@@ -177,7 +175,7 @@ function MenusPage() {
 
       const data = await res.json();
       alert(data.message);
-      fetchMenus(); // Refresh daftar menu
+      fetchMenus();
     } catch (err) {
       console.error("Error deleting menu:", err);
       alert("Gagal menghapus menu.");
@@ -204,6 +202,7 @@ function MenusPage() {
             </div>
           </div>
 
+          {/* Menampilkan pesan error autentikasi (authError) */}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -219,17 +218,15 @@ function MenusPage() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-200 text-left">
                   <th className="p-3 w-[5%] text-center">No</th>
-                  <th className="p-3 w-[25%]">Name Menu</th>{" "}
-                  {/* Adjusted width */}
+                  <th className="p-3 w-[25%]">Name Menu</th>
                   <th className="p-3 w-[15%]">Category</th>
                   <th className="p-3 w-[15%]">Price</th>
-                  <th className="p-3 w-[20%]">Image</th>{" "}
-                  {/* Adjusted width for thumbnail */}
-                  <th className="p-3 w-[20%] text-center">Action</th>{" "}
-                  {/* Adjusted width */}
+                  <th className="p-3 w-[20%] text-center">Image</th>
+                  <th className="p-3 w-[20%] text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
+                {/* Tampilkan loading atau error data umum */}
                 {(initialLoading || searchLoading) && menus.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-gray-500">
@@ -245,14 +242,14 @@ function MenusPage() {
                       </p>
                     </td>
                   </tr>
-                ) : dataError ? (
+                ) : dataError ? ( // <-- Gunakan dataError di sini
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
                         className="text-3xl text-red-500 mb-4"
                       />
-                      <p>{dataError}</p>
+                      <p>{dataError}</p> {/* <-- Tampilkan pesan dataError */}
                     </td>
                   </tr>
                 ) : filteredMenus.length === 0 ? (
@@ -270,23 +267,18 @@ function MenusPage() {
                       <td className="p-3">Rp {menu.price.toLocaleString()}</td>
                       <td className="p-3 text-center">
                         {menu.image_menu ? (
-                          <img
-                            src={menu.image_menu} // Langsung gunakan URL Cloudinary
-                            alt="Menu Thumbnail"
-                            className="w-16 h-16 object-cover rounded-md mx-auto cursor-pointer"
+                          <button
                             onClick={() => openImageModal(menu.image_menu)}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src =
-                                "https://placehold.co/64x64/cccccc/000000?text=Error";
-                            }}
-                          />
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            Review Image
+                          </button>
                         ) : (
                           <span className="text-gray-500">No Image</span>
                         )}
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-4 justify-center items-center">
+                        <div className="flex gap-4 ">
                           <button
                             onClick={() =>
                               navigate(`/menus/edit-menu/${menu.id_menu}`)
@@ -352,7 +344,7 @@ function MenusPage() {
               <FontAwesomeIcon icon={faXmark} className="text-2xl" />
             </button>
             <img
-              src={selectedImageUrl} // Menggunakan URL Cloudinary langsung
+              src={selectedImageUrl}
               alt="Menu Full"
               className="w-full h-auto object-contain rounded max-h-[80vh]"
               onError={(e) => {

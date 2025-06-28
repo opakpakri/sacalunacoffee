@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit } from "react-icons/fa";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -150,38 +150,6 @@ function MenusPage() {
     setSelectedImageUrl("");
   };
 
-  const handleDelete = async (id_menu, name_menu) => {
-    const confirmed = window.confirm(
-      `Yakin ingin menghapus menu "${name_menu}"?`
-    );
-    if (!confirmed) return;
-
-    const token = localStorage.getItem("adminToken");
-    try {
-      const res = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/menus/${id_menu}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        await handleAuthenticationError(res);
-        return;
-      }
-
-      const data = await res.json();
-      alert(data.message);
-      fetchMenus();
-    } catch (err) {
-      console.error("Error deleting menu:", err);
-      alert("Gagal menghapus menu.");
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -278,7 +246,7 @@ function MenusPage() {
                         )}
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-4 ">
+                        <div className="flex gap-4 justify-center items-center">
                           <button
                             onClick={() =>
                               navigate(`/menus/edit-menu/${menu.id_menu}`)
@@ -288,16 +256,6 @@ function MenusPage() {
                             aria-label={`Edit menu ${menu.name_menu}`}
                           >
                             <FaEdit className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDelete(menu.id_menu, menu.name_menu)
-                            }
-                            className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
-                            title="Hapus Menu"
-                            aria-label={`Hapus menu ${menu.name_menu}`}
-                          >
-                            <FaTrash className="w-5 h-5" />
                           </button>
                         </div>
                       </td>

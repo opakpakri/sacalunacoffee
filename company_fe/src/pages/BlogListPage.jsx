@@ -10,7 +10,7 @@ import {
   faSpinner,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import LogoSmall from "../assets/Images/logocompany.jpg";
+import LogoSmall from "../assets/Images/logocompany.jpg"; // Pastikan path benar
 
 function BlogListPage() {
   const [blogs, setBlogs] = useState([]);
@@ -28,11 +28,17 @@ function BlogListPage() {
       if (!res.ok) throw new Error("Server error");
 
       const data = await res.json();
-      setBlogs(data.data);
+      // Pastikan data.data adalah array sebelum di-set
+      if (data && Array.isArray(data.data)) {
+        setBlogs(data.data);
+      } else {
+        throw new Error("Struktur data blog tidak valid.");
+      }
       setHasError(false);
     } catch (error) {
       console.error("Gagal mengambil data blog:", error);
       setHasError(true);
+      setBlogs([]); // Pastikan blogs kosong jika ada error
     } finally {
       setLoading(false);
     }
@@ -85,7 +91,7 @@ function BlogListPage() {
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
                 className="appearance-none px-5 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-800
-                           focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 pr-10 text-base font-medium transition-all duration-200"
+                               focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 pr-10 text-base font-medium transition-all duration-200"
               >
                 <option value="desc">Terbaru</option>
                 <option value="asc">Terlama</option>
@@ -132,32 +138,33 @@ function BlogListPage() {
         </div>
       ) : (
         <div className="max-w-6xl mx-auto space-y-10">
-          {" "}
           {sortedBlogs.map((blog) => (
             <div
               key={blog.id_blog}
               onClick={() => navigate(`/blog/${blog.id_blog}`)}
               className="flex flex-col md:flex-row items-start gap-8 bg-white p-6 rounded-xl shadow-lg
-                         cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out group"
+                               cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out group"
             >
               <div className="w-full md:w-80 h-52 overflow-hidden rounded-lg flex-shrink-0">
-                {" "}
                 <img
-                  src={`https://sacalunacoffee-production.up.railway.app${blog.image_blog}`}
+                  src={blog.image_blog} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
                   alt={blog.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/320x208/cccccc/000000?text=Image+Load+Error";
+                  }} // Fallback image
                 />
               </div>
 
               <div className="flex-1">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
-                  {" "}
                   {blog.title}
                 </h2>
 
                 <div className="flex items-center text-sm text-gray-600 mb-4 flex-wrap gap-x-5 gap-y-2">
-                  {" "}
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon
                       icon={faClock}
@@ -169,10 +176,10 @@ function BlogListPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <img
-                      src={LogoSmall}
+                      src={LogoSmall} // Pastikan LogoSmall ini diimpor dengan benar
                       alt="Sacaluna Logo"
                       className="w-5 h-5"
-                    />{" "}
+                    />
                     <span className="font-semibold text-gray-800">
                       Admin Sacaluna Coffee
                     </span>
@@ -180,7 +187,6 @@ function BlogListPage() {
                 </div>
 
                 <p className="text-base md:text-lg text-gray-700 line-clamp-3 mb-4 leading-relaxed text-justify">
-                  {" "}
                   {blog.content}
                 </p>
 
@@ -190,7 +196,7 @@ function BlogListPage() {
                     navigate(`/blog/${blog.id_blog}`);
                   }}
                   className="inline-flex items-center gap-2 text-yellow-700 font-semibold px-4 py-2 rounded-lg
-                             hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                   hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   aria-label={`Baca selengkapnya tentang ${blog.title}`}
                 >
                   Baca Selengkapnya <FontAwesomeIcon icon={faArrowRight} />
@@ -200,6 +206,10 @@ function BlogListPage() {
           ))}
         </div>
       )}
+      <div className="absolute bottom-6 right-6 flex items-center gap-2 text-gray-600">
+        <img src={LogoSmall} alt="Logo Sacaluna Coffee" className="w-7 h-7" />
+        <span className="text-sm font-medium">Sacaluna Coffee</span>
+      </div>
     </div>
   );
 }

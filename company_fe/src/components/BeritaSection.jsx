@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LogoSmall from "../assets/Images/logocompany.jpg";
+import LogoSmall from "../assets/Images/logocompany.jpg"; // Pastikan path benar
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,
   faClock,
-  faUserEdit,
+  faUserEdit, // Ini di BeritaSection tidak dipakai tapi ada di BlogViewPage
   faSpinner,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
@@ -20,15 +20,23 @@ const BeritaSection = () => {
       const res = await fetch(
         "https://sacalunacoffee-production.up.railway.app/api/blogs"
       );
+      // Jika respons tidak OK, lempar error agar ditangkap di catch
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       const data = await res.json();
 
-      const sortedBlogs = data.data
-        .sort((a, b) => new Date(b.time) - new Date(a.time))
-        .slice(0, 3);
+      // Pastikan data.data adalah array sebelum di-sort
+      const sortedBlogs = Array.isArray(data.data)
+        ? data.data
+            .sort((a, b) => new Date(b.time) - new Date(a.time))
+            .slice(0, 3) // Ambil 3 blog terbaru
+        : []; // Jika bukan array, set ke array kosong
 
       setBlogs(sortedBlogs);
     } catch (error) {
-      console.error("Failed to fetch blogs:", error);
+      console.error("Failed to fetch blogs for BeritaSection:", error);
+      // Bisa tambahkan state error lain jika ingin menampilkan pesan di UI
     } finally {
       setLoading(false);
     }
@@ -82,7 +90,6 @@ const BeritaSection = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 max-w-7xl mx-auto justify-center pb-8">
-          {" "}
           {blogs.map((blog) => (
             <div
               key={blog.id_blog}
@@ -90,16 +97,19 @@ const BeritaSection = () => {
               className="cursor-pointer bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
             >
               <div className="w-full h-52 overflow-hidden rounded-t-xl">
-                {" "}
                 <img
-                  src={`https://sacalunacoffee-production.up.railway.app${blog.image_blog}`}
+                  src={blog.image_blog} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
                   alt={blog.title || "Gambar Berita"}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://placehold.co/400x208/cccccc/000000?text=Image+Load+Error";
+                  }} // Fallback image
                 />
               </div>
               <div className="p-6 text-left flex flex-col flex-grow">
-                {" "}
                 <h3 className="line-clamp-2 font-bold text-xl mb-3 text-gray-900 leading-tight">
                   {blog.title}
                 </h3>
@@ -108,16 +118,16 @@ const BeritaSection = () => {
                   <span className="font-medium">
                     {formatBlogDate(blog.time)}
                   </span>
+                  {/* Perbaiki ikon faUserEdit, karena tidak ada data user dari API */}
                   <FontAwesomeIcon
-                    icon={faUserEdit}
+                    icon={faUserEdit} // Sebaiknya diganti atau dihapus jika tidak ada data penulis
                     className="text-gray-600 ml-auto"
-                  />{" "}
+                  />
                   <span className="font-medium text-gray-800">
                     Admin Sacaluna Coffee
                   </span>
                 </div>
                 <p className="line-clamp-3 mb-4 text-gray-700 leading-relaxed text-justify flex-grow">
-                  {" "}
                   {blog.content}
                 </p>
                 <button
@@ -125,8 +135,8 @@ const BeritaSection = () => {
                     e.stopPropagation();
                     navigate(`/blog/${blog.id_blog}`);
                   }}
-                  className="inline-flex items-center gap-2 text-yellow-700 font-semibold px-4 py-2 rounded-lg mt-auto // Push to bottom
-                             hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="inline-flex items-center gap-2 text-yellow-700 font-semibold px-4 py-2 rounded-lg mt-auto 
+                                   hover:bg-yellow-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   aria-label={`Baca selengkapnya tentang ${blog.title}`}
                 >
                   Baca Selengkapnya <FontAwesomeIcon icon={faArrowRight} />
@@ -138,11 +148,10 @@ const BeritaSection = () => {
       )}
 
       <div className="mt-12 pb-8 text-center">
-        {" "}
         <button
           onClick={() => navigate("/blogs")}
           className="w-auto bg-black text-white font-semibold py-3 px-8 rounded-lg shadow-md
-                     hover:bg-yellow-500 hover:text-black transition-colors duration-200 text-lg transform hover:scale-105"
+                  hover:bg-yellow-500 hover:text-black transition-colors duration-200 text-lg transform hover:scale-105"
         >
           Lihat Semua Berita
         </button>

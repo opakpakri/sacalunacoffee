@@ -8,7 +8,7 @@ import {
   faTimesCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import bgImage from "../assets/Images/bgImage.jpg";
+import bgImage from "../assets/Images/bgImage.jpg"; // Pastikan path benar
 
 function BlogViewPage() {
   const { id } = useParams();
@@ -25,12 +25,17 @@ function BlogViewPage() {
       if (!res.ok) throw new Error("Server error");
 
       const data = await res.json();
-      setBlog(data.data);
+      // Pastikan data yang diterima ada dan sesuai struktur { data: blogObject }
+      if (data && data.data) {
+        setBlog(data.data);
+      } else {
+        throw new Error("Artikel blog tidak ditemukan atau data tidak valid.");
+      }
       setHasError(false);
     } catch (error) {
       console.error("Gagal mengambil data blog:", error);
       setHasError(true);
-      setBlog(null);
+      setBlog(null); // Pastikan blog kosong jika ada error
     } finally {
       setLoading(false);
     }
@@ -39,7 +44,7 @@ function BlogViewPage() {
   useEffect(() => {
     fetchBlog();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id]); // id sebagai dependency karena URL berubah saat navigasi
 
   const formatBlogDate = (dateString) => {
     if (!dateString) return "Tanggal Tidak Tersedia";
@@ -104,10 +109,15 @@ function BlogViewPage() {
 
             <div className="flex justify-center mb-8">
               <img
-                src={`https://sacalunacoffee-production.up.railway.app${blog.image_blog}`}
+                src={blog.image_blog} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
                 alt={blog.title}
                 className="w-full max-w-4xl h-auto max-h-[550px] object-cover rounded-xl shadow-lg border border-gray-200"
                 loading="lazy"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src =
+                    "https://placehold.co/800x550/cccccc/000000?text=Image+Load+Error";
+                }} // Fallback image
               />
             </div>
 

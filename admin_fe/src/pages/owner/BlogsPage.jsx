@@ -222,8 +222,8 @@ function BlogsPage() {
                   <th className="p-3 w-[5%] text-center">No</th>
                   <th className="p-3 w-[35%]">Title</th>
                   <th className="p-3 w-[35%]">Content</th>
-                  <th className="p-3 w-[12.5%]">Image</th>
-                  <th className="p-3 w-[12.5%]">Action</th>
+                  <th className="p-3 w-[12.5%] text-center">Image</th>
+                  <th className="p-3 w-[12.5%] text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="text-sm">

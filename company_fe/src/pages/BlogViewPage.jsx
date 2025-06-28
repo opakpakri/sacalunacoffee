@@ -104,7 +104,7 @@ function BlogViewPage() {
 
             <div className="flex justify-center mb-8">
               <img
-                src={`https://sacalunacoffee-production.up.railway${blog.image_blog}`}
+                src={`https://sacalunacoffee-production.up.railway.app${blog.image_blog}`}
                 alt={blog.title}
                 className="w-full max-w-4xl h-auto max-h-[550px] object-cover rounded-xl shadow-lg border border-gray-200"
                 loading="lazy"

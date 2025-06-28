@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"; // Tambahkan useCallback
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
@@ -8,8 +8,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCirclePlus,
   faXmark,
-  faSpinner, // <--- Import faSpinner
-  faTimesCircle, // <--- Import faTimesCircle
+  faSpinner,
+  faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
 function BlogsPage() {
@@ -20,11 +20,10 @@ function BlogsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [authError, setAuthError] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false); // <--- State baru untuk loading pencarian
-  const [initialLoading, setInitialLoading] = useState(true); // <--- State baru untuk loading awal
-  const [dataError, setDataError] = useState(null); // <--- State baru untuk error data umum (bukan auth)
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [dataError, setDataError] = useState(null);
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -64,12 +63,8 @@ function BlogsPage() {
     [navigate]
   );
 
-  // Bungkus fetchBlogs dengan useCallback
   const fetchBlogs = useCallback(async () => {
-    // setSearchLoading(true); // Ini akan diatur oleh useEffect debounce atau loadBlogsData
-    setDataError(null); // Reset error data umum
-    // setAuthError(null); // Ini akan direset di sini, atau oleh handleAuthenticationError
-
+    setDataError(null);
     const token = localStorage.getItem("adminToken");
     console.log(
       "Mengambil blog dengan token:",
@@ -93,20 +88,18 @@ function BlogsPage() {
 
       const data = await res.json();
       setBlogs(data.data);
-      setAuthError(null); // Reset authError jika fetch berhasil
+      setAuthError(null);
     } catch (error) {
       console.error(
         "Gagal memuat blog (kesalahan jaringan atau tak tertangani):",
         error
       );
       setDataError(
-        // <--- Set error data umum di sini
         "Gagal memuat daftar blog. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
     }
-  }, [handleAuthenticationError]); // handleAuthenticationError adalah dependency fetchBlogs
+  }, [handleAuthenticationError]);
 
-  // Effect untuk loading awal
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const user = JSON.parse(localStorage.getItem("user"));
@@ -121,27 +114,25 @@ function BlogsPage() {
     }
 
     const loadBlogsData = async () => {
-      setInitialLoading(true); // Aktifkan loading awal
+      setInitialLoading(true);
       await fetchBlogs();
-      setInitialLoading(false); // Matikan loading awal setelah fetch
+      setInitialLoading(false);
     };
 
     loadBlogsData();
   }, [navigate, fetchBlogs]);
 
-  // Effect untuk pencarian (dengan Debounce)
   useEffect(() => {
-    // Hanya aktifkan debounce setelah loading awal selesai
     if (!initialLoading) {
       const delayDebounceFn = setTimeout(async () => {
-        setSearchLoading(true); // Aktifkan loading pencarian
-        await fetchBlogs(); // Panggil ulang fetchBlogs untuk pencarian
-        setSearchLoading(false); // Matikan loading pencarian
-      }, 500); // Debounce 500ms
+        setSearchLoading(true);
+        await fetchBlogs();
+        setSearchLoading(false);
+      }, 500);
 
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [searchTerm, fetchBlogs, initialLoading]); // searchTerm, fetchBlogs, dan initialLoading sebagai dependency
+  }, [searchTerm, fetchBlogs, initialLoading]);
 
   const filteredBlogs = blogs.filter(
     (blog) =>
@@ -233,7 +224,6 @@ function BlogsPage() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {/* Tampilkan loading awal atau loading pencarian */}
                 {initialLoading || searchLoading ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
@@ -249,14 +239,14 @@ function BlogsPage() {
                       </p>
                     </td>
                   </tr>
-                ) : dataError ? ( // Tampilkan error umum jika ada dan bukan karena loading
+                ) : dataError ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
                         className="text-3xl text-red-500 mb-4"
                       />
-                      <p>{dataError}</p> {/* Menggunakan dataError di sini */}
+                      <p>{dataError}</p>
                     </td>
                   </tr>
                 ) : filteredBlogs.length === 0 ? (
@@ -277,7 +267,7 @@ function BlogsPage() {
                           {blog.title}
                         </button>
                       </td>
-                      <td className="p-3  w-2/5">
+                      <td className="p-3 w-2/5">
                         <button
                           onClick={() => openModal("content", blog.content)}
                           className="line-clamp-2 text-justify"
@@ -342,7 +332,7 @@ function BlogsPage() {
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50"
-          onClick={closeModal} // Menggunakan closeModal
+          onClick={closeModal}
         >
           <div
             className="bg-white p-8 rounded-lg shadow-lg max-w-lg w-full relative"
@@ -357,7 +347,7 @@ function BlogsPage() {
 
             {modalType === "image" ? (
               <img
-                src={`https://sacalunacoffee-production.up.railway.app${modalContent}`}
+                src={modalContent} // Hapus prefix API Railway di sini
                 alt="Blog"
                 className="w-full h-auto object-contain rounded"
               />

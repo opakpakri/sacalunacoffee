@@ -4,7 +4,7 @@ import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner, faSave } from "@fortawesome/free-solid-svg-icons"; // <-- Import faSpinner dan faSave
+import { faSpinner, faSave } from "@fortawesome/free-solid-svg-icons";
 
 function EditBlogsPage() {
   const navigate = useNavigate();
@@ -13,12 +13,12 @@ function EditBlogsPage() {
   const [form, setForm] = useState({
     title: "",
     content: "",
-    image: null,
+    image: null, // File objek untuk upload baru
   });
-  const [previewImage, setPreviewImage] = useState(null);
-  const [oldImage, setOldImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru
+  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database
   const [authError, setAuthError] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false); // <--- State baru untuk loading tombol submit
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -83,11 +83,10 @@ function EditBlogsPage() {
       setForm({
         title: blog.title || "",
         content: blog.content || "",
-        image: null,
+        image: null, // Reset file input
       });
-      setOldImage(
-        `https://sacalunacoffee-production.up.railway.app${blog.image_blog}`
-      );
+      // Langsung gunakan URL dari database karena sudah URL Cloudinary penuh
+      setOldImage(blog.image_blog);
     } catch (error) {
       console.error("Gagal fetch blog:", error);
       setAuthError(
@@ -115,8 +114,8 @@ function EditBlogsPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      setPreviewImage(URL.createObjectURL(file));
-      setOldImage(null);
+      setPreviewImage(URL.createObjectURL(file)); // Buat URL lokal untuk preview
+      setOldImage(null); // Hapus gambar lama dari tampilan preview jika ada gambar baru
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -125,13 +124,13 @@ function EditBlogsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    setSubmitLoading(true); // <--- Aktifkan loading saat submit dimulai
+    setSubmitLoading(true);
 
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("content", form.content);
     if (form.image) {
-      formData.append("image", form.image);
+      formData.append("image", form.image); // Hanya tambahkan gambar jika ada yang baru dipilih
     }
 
     try {
@@ -142,29 +141,27 @@ function EditBlogsPage() {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
+            // Penting: JANGAN SET 'Content-Type': 'application/json'
+            // saat mengirim FormData. Browser akan mengaturnya secara otomatis.
           },
           body: formData,
         }
       );
 
       if (!response.ok) {
-        await handleAuthenticationError(response);
+        const errorData = await response.json();
+        alert(errorData.message || "Gagal memperbarui berita."); // Tampilkan pesan error dari backend
+        await handleAuthenticationError(response); // Fallback ke penanganan error umum
         return;
       }
 
-      const result = await response.json(); // Membaca hasil sukses jika diperlukan
-
-      if (response.ok) {
-        alert("Berita berhasil diperbarui"); // Menggunakan alert untuk sukses
-        navigate("/blogs");
-      } else {
-        alert(result.message || "Gagal memperbarui berita");
-      }
+      alert("Berita berhasil diperbarui");
+      navigate("/blogs");
     } catch (error) {
       console.error("Error saat update:", error);
       setAuthError("Terjadi kesalahan saat mengupdate blog: " + error.message);
     } finally {
-      setSubmitLoading(false); // <--- Matikan loading setelah request selesai
+      setSubmitLoading(false);
     }
   };
 
@@ -189,7 +186,7 @@ function EditBlogsPage() {
           <form
             onSubmit={handleSubmit}
             className="relative bg-white border rounded shadow-md flex w-full h-[700px] gap-12"
-            encType="multipart/form-data"
+            encType="multipart/form-data" // Penting untuk upload file
           >
             <div className="flex-1 p-12 space-y-4 relative">
               <div className="flex flex-col">
@@ -236,11 +233,11 @@ function EditBlogsPage() {
               <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
                 <button
                   type="submit"
-                  disabled={submitLoading} // <--- Nonaktifkan tombol saat loading
+                  disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                             disabled:opacity-50 disabled:cursor-not-allowed" // <-- Gaya disabled
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitLoading ? ( // <--- Tampilkan spinner saat loading
+                  {submitLoading ? (
                     <FontAwesomeIcon
                       icon={faSpinner}
                       spin
@@ -248,12 +245,11 @@ function EditBlogsPage() {
                     />
                   ) : (
                     <FontAwesomeIcon
-                      icon={faSave} // Menggunakan ikon Save
+                      icon={faSave}
                       className="group-hover:text-black text-lg"
                     />
                   )}
                   {submitLoading ? "Mengubah..." : "Update Blog"}{" "}
-                  {/* <--- Ubah teks tombol */}
                 </button>
               </div>
             </div>
@@ -271,7 +267,7 @@ function EditBlogsPage() {
                     Gambar lama, upload untuk mengubah menjadi gambar baru
                   </div>
                   <img
-                    src={oldImage}
+                    src={oldImage} // Langsung menggunakan URL Cloudinary dari state
                     alt="Preview"
                     className="object-cover w-full h-full rounded opacity-70"
                   />

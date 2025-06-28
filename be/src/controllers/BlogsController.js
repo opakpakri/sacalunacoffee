@@ -1,3 +1,4 @@
+// src/controllers/BlogsController.js (Pastikan ini yang Anda gunakan)
 const pool = require("../config/db");
 const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
 
@@ -16,13 +17,13 @@ const getAllBlogs = async (req, res) => {
 const addBlog = async (req, res) => {
   try {
     const { title, content } = req.body;
-    // req.file.path akan berisi URL dari Cloudinary
     const imageUrl = req.file?.path; // Dapatkan URL gambar dari Cloudinary
 
     if (!title || !content || !imageUrl) {
       // Pastikan imageUrl ada
-      // Jika ada file yang terupload ke Cloudinary tapi ada validasi gagal, hapus gambar tersebut
-      if (req.file?.public_id) {
+      // Jika ada file yang terupload ke Cloudinary tapi ada validasi gagal, hapus gambar tersebut.
+      // public_id disimpan di req.file.filename atau req.file.public_id
+      if (req.file && req.file.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
       return res
@@ -30,8 +31,6 @@ const addBlog = async (req, res) => {
         .json({ message: "Semua field harus diisi, termasuk gambar" });
     }
 
-    // Tidak perlu lagi `imagePath = `/uploads/blogs/${image}``
-    // Langsung gunakan imageUrl dari Cloudinary
     await pool.query(
       "INSERT INTO blogs (title, content, image_blog) VALUES (?, ?, ?)",
       [title, content, imageUrl] // Simpan URL Cloudinary ke database
@@ -43,7 +42,7 @@ const addBlog = async (req, res) => {
   } catch (err) {
     console.error("Error adding blog:", err.message);
     // Jika ada file yang terupload ke Cloudinary sebelum error DB, hapus juga
-    if (req.file?.public_id) {
+    if (req.file && req.file.public_id) {
       try {
         await cloudinary.uploader.destroy(req.file.public_id);
         console.log(
@@ -85,8 +84,6 @@ const updateBlog = async (req, res) => {
       // Pastikan ada URL lama dan baru
       try {
         // Ekstrak public_id dari oldImageUrl
-        // public_id yang kita butuhkan adalah 'sacaluna_blogs/namafileunik'
-        // Regex ini akan mengekstrak folder (sacaluna_blogs) dan nama file unik
         const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
@@ -104,7 +101,6 @@ const updateBlog = async (req, res) => {
           "Error deleting old image from Cloudinary:",
           deleteErr.message
         );
-        // Lanjutkan update DB meskipun gagal menghapus gambar lama di Cloudinary
       }
     }
 
@@ -162,7 +158,6 @@ const deleteBlog = async (req, res) => {
     // Hapus gambar dari Cloudinary jika ada
     if (imageUrlToDelete) {
       try {
-        // Ekstrak public_id dari URL Cloudinary
         const publicIdMatch = imageUrlToDelete.match(
           /\/upload\/\w+\/(.+)\.\w+$/
         );
@@ -180,7 +175,6 @@ const deleteBlog = async (req, res) => {
           "Error deleting image from Cloudinary:",
           deleteErr.message
         );
-        // Lanjutkan penghapusan DB meskipun gagal menghapus gambar dari Cloudinary
       }
     }
 

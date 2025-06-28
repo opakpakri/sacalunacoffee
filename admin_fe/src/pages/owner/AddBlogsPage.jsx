@@ -4,8 +4,8 @@ import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons"; // <-- Import faSpinner
-import oldImage from "../../assets/images/signImage.webp";
+import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import oldImage from "../../assets/images/signImage.webp"; // Menggunakan ini sebagai placeholder
 
 function AddBlogsPage() {
   const navigate = useNavigate();
@@ -16,9 +16,8 @@ function AddBlogsPage() {
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [authError, setAuthError] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false); // <--- State baru untuk loading tombol submit
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -86,18 +85,18 @@ function AddBlogsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    setSubmitLoading(true); // <--- Aktifkan loading saat submit dimulai
+    setSubmitLoading(true);
 
     if (!form.image) {
       alert("Silakan unggah gambar terlebih dahulu.");
-      setSubmitLoading(false); // <--- Matikan loading jika validasi gagal
+      setSubmitLoading(false);
       return;
     }
 
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("content", form.content);
-    formData.append("image", form.image);
+    formData.append("image", form.image); // File gambar ditambahkan ke FormData
 
     try {
       const token = localStorage.getItem("adminToken");
@@ -107,13 +106,20 @@ function AddBlogsPage() {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
+            // Penting: JANGAN SET 'Content-Type': 'application/json'
+            // saat mengirim FormData. Browser akan mengaturnya secara otomatis
+            // dengan boundary yang benar.
           },
           body: formData,
         }
       );
 
       if (!response.ok) {
-        await handleAuthenticationError(response);
+        // Ini akan menangani 400 (semua field harus diisi) dan error otentikasi
+        const errorData = await response.json();
+        // Anda bisa menambahkan penanganan error spesifik di sini jika backend mengirim pesan error yang berbeda
+        alert(errorData.message || "Gagal menambahkan blog.");
+        await handleAuthenticationError(response); // Fallback untuk penanganan otentikasi/server error
         return;
       }
 
@@ -123,7 +129,7 @@ function AddBlogsPage() {
       console.error("Error saat menambahkan blog:", error);
       setAuthError("Terjadi kesalahan saat menambahkan blog: " + error.message);
     } finally {
-      setSubmitLoading(false); // <--- Matikan loading setelah request selesai
+      setSubmitLoading(false);
     }
   };
 
@@ -148,7 +154,7 @@ function AddBlogsPage() {
           <form
             onSubmit={handleSubmit}
             className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
-            encType="multipart/form-data"
+            encType="multipart/form-data" // Penting untuk upload file
           >
             <div className="flex-1 p-12 space-y-6 relative">
               <div className="flex flex-col">
@@ -195,11 +201,11 @@ function AddBlogsPage() {
               <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
                 <button
                   type="submit"
-                  disabled={submitLoading} // <--- Nonaktifkan tombol saat loading
+                  disabled={submitLoading}
                   className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                             disabled:opacity-50 disabled:cursor-not-allowed" // <-- Gaya disabled
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitLoading ? ( // <--- Tampilkan spinner saat loading
+                  {submitLoading ? (
                     <FontAwesomeIcon
                       icon={faSpinner}
                       spin
@@ -212,7 +218,6 @@ function AddBlogsPage() {
                     />
                   )}
                   {submitLoading ? "Menambahkan..." : "Add Blog"}{" "}
-                  {/* <--- Ubah teks tombol */}
                 </button>
               </div>
             </div>
@@ -231,7 +236,7 @@ function AddBlogsPage() {
                   </div>
 
                   <img
-                    src={oldImage}
+                    src={oldImage} // Menggunakan gambar placeholder lokal
                     alt="Placeholder"
                     className="object-cover w-full h-full rounded opacity-70"
                   />

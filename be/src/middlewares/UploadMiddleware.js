@@ -1,9 +1,11 @@
-const cloudinary = require("../config/cloudinary");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 const path = require("path");
+// const fs = require("fs"); // Tidak lagi diperlukan karena tidak menyimpan ke lokal
 
-// --- Fungsi format tanggal YYYYMMDD-HHmmss (Ditambahkan dari versi lama) ---
+const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
+const { CloudinaryStorage } = require("multer-storage-cloudinary"); // Impor CloudinaryStorage untuk Multer
+
+// Fungsi format tanggal YYYYMMDD-HHmmss
 const formatDate = () => {
   const d = new Date();
   const pad = (n) => n.toString().padStart(2, "0");
@@ -17,51 +19,60 @@ const formatDate = () => {
 
   return `${year}${month}${day}${hour}${minute}${second}`;
 };
-// --- Akhir penambahan formatDate ---
 
+// Tentukan subfolder di Cloudinary berdasarkan tipe upload
 const getUploadSubfolder = (type) => {
   const folders = {
-    menu: "sacaluna_menus", // Diubah agar sesuai dengan folder di Cloudinary
-    blog: "sacaluna_blogs", // Diubah agar sesuai dengan folder di Cloudinary
+    menu: "sacaluna_menus", // Nama folder di Cloudinary untuk menu
+    blog: "sacaluna_blogs", // Nama folder di Cloudinary untuk blog
   };
+  // Jika tipe tidak dikenali, default ke folder umum 'sacaluna_uploads'
   return folders[type] || "sacaluna_uploads";
 };
 
-// Configure Cloudinary storage for Multer
+// Konfigurasi Cloudinary storage untuk Multer
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary: cloudinary, // Menggunakan instance 'cloudinary' yang sudah dikonfigurasi
   params: async (req, file) => {
-    const subfolder = getUploadSubfolder(req.uploadType);
-    const originalFilename = path.parse(file.originalname).name;
-    const timestamp = formatDate(); // Gunakan fungsi formatDate di sini
+    const subfolder = getUploadSubfolder(req.uploadType); // Menggunakan req.uploadType yang disetel oleh middleware sebelumnya
+    const originalFilename = path.parse(file.originalname).name; // Mendapatkan nama file asli tanpa ekstensi
+    const timestamp = formatDate(); // Mendapatkan timestamp menggunakan fungsi formatDate
 
     return {
-      folder: subfolder,
-      public_id: `${originalFilename}-${timestamp}`, // Menggunakan timestamp dari formatDate
-      format: "webp",
-      transformation: [{ width: 800, height: 600, crop: "limit" }],
+      folder: subfolder, // Folder tujuan di akun Cloudinary Anda
+      public_id: `${originalFilename}-${timestamp}`, // ID publik unik untuk file (nama_asli-timestamp)
+      format: "webp", // Opsional: Konversi semua gambar ke format webp untuk optimisasi
+      transformation: [{ width: 800, height: 600, crop: "limit" }], // Opsional: Terapkan transformasi (misal: resize)
     };
   },
 });
 
-// Filter file to only accept jpeg, png, and webp
+// Filter file hanya menerima tipe gambar tertentu (jpeg, png, webp)
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+  ]; // Perhatikan penambahan 'image/jpg'
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
+    // Mengembalikan pesan error yang lebih spesifik jika tipe file tidak diizinkan
     cb(
-      new Error("Only .png, .jpeg, .jpg, and .webp images are allowed"),
+      new Error(
+        "Hanya gambar dengan format .png, .jpeg, .jpg, dan .webp yang diizinkan"
+      ),
       false
     );
   }
 };
 
 const upload = multer({
-  storage: storage,
+  storage: storage, // Menggunakan storage Cloudinary
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: 5 * 1024 * 1024, // Batas ukuran file 5MB (sesuaikan jika perlu)
   },
 });
 

@@ -62,8 +62,7 @@ const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    // Dapatkan URL gambar baru dari Cloudinary (jika ada upload baru)
-    const newImageUrl = req.file?.path;
+    const newImageUrl = req.file?.path; // Dapatkan URL gambar baru dari Cloudinary (jika ada upload baru)
 
     const [oldData] = await pool.query(
       "SELECT image_blog FROM blogs WHERE id_blog = ?",
@@ -73,7 +72,8 @@ const updateBlog = async (req, res) => {
     if (oldData.length === 0) {
       // Jika blog tidak ditemukan tapi ada gambar baru terupload, hapus gambar baru tersebut
       if (newImageUrl && req.file?.public_id) {
-        await cloudinary.uploader.destroy(req.file.public_id);
+        // Ini penting: req.file.public_id memastikan gambar baru sudah terupload ke Cloudinary
+        await cloudinary.uploader.destroy(req.file.public_id); // Hapus gambar baru jika blog tidak ada
       }
       return res.status(404).json({ message: "Blog tidak ditemukan" });
     }
@@ -82,13 +82,13 @@ const updateBlog = async (req, res) => {
 
     // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru yang diunggah
     if (newImageUrl && oldImageUrl) {
+      // <<< KONDISI INI PENTING
       try {
         // Ekstrak public_id dari oldImageUrl untuk menghapusnya dari Cloudinary
-        // Regex ini menangani format URL Cloudinary dan mendapatkan folder/public_id
         const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
-          await cloudinary.uploader.destroy(publicId);
+          await cloudinary.uploader.destroy(publicId); // <<< BARIS INI MENGHAPUS GAMBAR LAMA
           console.log(
             `Gambar lama berhasil dihapus dari Cloudinary: ${publicId}`
           );
@@ -107,12 +107,12 @@ const updateBlog = async (req, res) => {
     }
 
     // Tentukan URL gambar yang akan disimpan ke DB: gunakan yang baru jika ada, jika tidak, pertahankan yang lama
-    const imageUrlToSave = newImageUrl || oldImageUrl;
+    const imageUrlToSave = newImageUrl || oldImageUrl; // <<< BARIS INI MENGGANTI DENGAN GAMBAR BARU ATAU MEMPERTAHANKAN YANG LAMA
 
     await pool.query(
       `
-      UPDATE blogs 
-      SET title = ?, content = ?, image_blog = ? 
+      UPDATE blogs
+      SET title = ?, content = ?, image_blog = ?
       WHERE id_blog = ?`,
       [title, content, imageUrlToSave, id] // Simpan URL Cloudinary ke database
     );

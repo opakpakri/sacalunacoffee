@@ -101,7 +101,7 @@ function TransactionsPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const url = `http://localhost:3000/api/transactions-cashier/today?searchTerm=${searchTerm}`;
+      const url = `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/today?searchTerm=${searchTerm}`;
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -208,7 +208,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `http://localhost:3000/api/payments/${editAmountTransaction.id_payment}/status`,
+        `https://sacalunacoffee-production.up.railway.app/api/payments/${editAmountTransaction.id_payment}/status`,
         {
           method: "PUT",
           headers: {
@@ -302,7 +302,7 @@ function TransactionsPage() {
       const amountPaidToSend = selectedTransaction.amount_paid; // Use existing amount_paid for API call
 
       const updatePaymentResponse = await fetch(
-        `http://localhost:3000/api/payments/${id_payment}/status`,
+        `https://sacalunacoffee-production.up.railway.app/api/payments/${id_payment}/status`,
         {
           method: "PUT",
           headers: {
@@ -337,7 +337,7 @@ function TransactionsPage() {
         selectedTransaction.order_status !== orderStatusToUpdate // Prevent unnecessary updates
       ) {
         const updateOrderResponse = await fetch(
-          `http://localhost:3000/api/orders/${id_order}/status`,
+          `https://sacalunacoffee-production.up.railway.app/api/orders/${id_order}/status`,
           {
             method: "PUT",
             headers: {
@@ -413,7 +413,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `http://localhost:3000/api/transactions-cashier/${transaction.id_order}/items`,
+        `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

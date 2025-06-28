@@ -96,11 +96,14 @@ function BarcodesPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch("http://localhost:3000/api/tables/all", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/tables/all",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!res.ok) {
         await handleAuthenticationError(res);
         return;
@@ -125,7 +128,7 @@ function BarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(
-        `http://localhost:3000/api/tables/generate-qr/${table.id_table}`,
+        `https://sacalunacoffee-production.up.railway.app/api/tables/generate-qr/${table.id_table}`,
         {
           method: "POST",
           headers: {
@@ -148,7 +151,7 @@ function BarcodesPage() {
         if (data.reused) {
           if (age > TOKEN_EXPIRY_SECONDS) {
             const forcedRes = await fetch(
-              `http://localhost:3000/api/tables/generate-qr/${table.id_table}?force=true`,
+              `https://sacalunacoffee-production.up.railway.app/api/tables/generate-qr/${table.id_table}?force=true`,
               {
                 method: "POST",
                 headers: {
@@ -176,7 +179,7 @@ function BarcodesPage() {
               return;
             }
             const forcedRes = await fetch(
-              `http://localhost:3000/api/tables/generate-qr/${table.id_table}?force=true`,
+              `https://sacalunacoffee-production.up.railway.app/api/tables/generate-qr/${table.id_table}?force=true`,
               {
                 method: "POST",
                 headers: {
@@ -218,7 +221,7 @@ function BarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(
-        `http://localhost:3000/api/tables/generate-qr/${table.id_table}`,
+        `https://sacalunacoffee-production.up.railway.app/api/tables/generate-qr/${table.id_table}`,
         {
           method: "POST",
           headers: {
@@ -408,7 +411,7 @@ function BarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `http://localhost:3000/api/tables/${id_table}`,
+        `https://sacalunacoffee-production.up.railway.app/api/tables/${id_table}`,
         {
           method: "DELETE",
           headers: {

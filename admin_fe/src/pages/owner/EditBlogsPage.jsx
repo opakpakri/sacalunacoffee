@@ -63,11 +63,14 @@ function EditBlogsPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/blogs/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/blogs/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);
@@ -82,7 +85,9 @@ function EditBlogsPage() {
         content: blog.content || "",
         image: null,
       });
-      setOldImage(`http://localhost:3000${blog.image_blog}`);
+      setOldImage(
+        `https://sacalunacoffee-production.up.railway.app${blog.image_blog}`
+      );
     } catch (error) {
       console.error("Gagal fetch blog:", error);
       setAuthError(
@@ -131,13 +136,16 @@ function EditBlogsPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/blogs/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/blogs/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);

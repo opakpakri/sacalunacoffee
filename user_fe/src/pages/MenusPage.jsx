@@ -20,7 +20,9 @@ function MenusPage({ addToCart, searchTerm }) {
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/menus");
+        const res = await fetch(
+          "https://sacalunacoffee-production.up.railway.app/api/menus"
+        );
         if (!res.ok) throw new Error("Server error");
         const data = await res.json();
         setMenus(data.data);
@@ -184,7 +186,7 @@ function MenusPage({ addToCart, searchTerm }) {
                             </span>
                           )}
                           <img
-                            src={`http://localhost:3000${menu.image_menu}`}
+                            src={`https://sacalunacoffee-production.up.railway.app${menu.image_menu}`}
                             alt={menu.name_menu}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                             loading="lazy"

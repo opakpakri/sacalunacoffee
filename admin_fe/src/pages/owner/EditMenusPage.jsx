@@ -71,11 +71,14 @@ function EditMenusPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/menus/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/menus/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);
@@ -105,7 +108,9 @@ function EditMenusPage() {
       });
 
       setDrinkType(detectedDrinkType);
-      setOldImage(`http://localhost:3000${data.image_menu}`); // Set gambar lama untuk preview
+      setOldImage(
+        `https://sacalunacoffee-production.up.railway.app${data.image_menu}`
+      ); // Set gambar lama untuk preview
     } catch (error) {
       console.error("Gagal fetch menu:", error);
       setAuthError(
@@ -163,16 +168,19 @@ function EditMenusPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/menus/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Penting: Jangan set 'Content-Type': 'application/json'
-          // saat mengirim FormData. Browser akan mengaturnya secara otomatis
-          // dengan boundary yang benar.
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/menus/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Penting: Jangan set 'Content-Type': 'application/json'
+            // saat mengirim FormData. Browser akan mengaturnya secara otomatis
+            // dengan boundary yang benar.
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         // Coba baca pesan error dari backend

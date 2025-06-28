@@ -87,7 +87,7 @@ function HistorysPage() {
     setTotalRevenue(0);
     try {
       const token = localStorage.getItem("adminToken");
-      let url = `http://localhost:3000/api/historys-admin/all?searchTerm=${searchTerm}`;
+      let url = `https://sacalunacoffee-production.up.railway.app/api/historys-admin/all?searchTerm=${searchTerm}`;
 
       // Modify the URL to send the selected date (month and year)
       if (selectedDate) {
@@ -184,7 +184,7 @@ function HistorysPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `http://localhost:3000/api/transactions-cashier/${transaction.id_order}/items`,
+        `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

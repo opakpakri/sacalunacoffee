@@ -44,7 +44,7 @@ function CompletePaymentPage() {
     setFetchDetailsError(null);
     try {
       const response = await fetch(
-        `http://localhost:3000/api/payments/details?table=${tableNumber}&token=${token}`
+        `https://sacalunacoffee-production.up.railway.app/api/payments/details?table=${tableNumber}&token=${token}`
       );
       if (!response.ok) {
         const errorData = await response.json();
@@ -147,7 +147,7 @@ function CompletePaymentPage() {
       };
 
       const response = await fetch(
-        "http://localhost:3000/api/payments/success",
+        "https://sacalunacoffee-production.up.railway.app/api/payments/success",
         {
           method: "POST",
           headers: {
@@ -190,7 +190,7 @@ function CompletePaymentPage() {
     setError(null);
     try {
       const response = await fetch(
-        "http://localhost:3000/api/payments/cancel",
+        "https://sacalunacoffee-production.up.railway.app/api/payments/cancel",
         {
           method: "POST",
           headers: {

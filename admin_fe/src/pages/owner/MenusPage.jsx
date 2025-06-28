@@ -71,11 +71,14 @@ function MenusPage() {
     );
 
     try {
-      const res = await fetch("http://localhost:3000/api/menus", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/menus",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         await handleAuthenticationError(res);
@@ -142,7 +145,9 @@ function MenusPage() {
 
   const openImageModal = (imageName) => {
     console.log("Buka gambar:", imageName);
-    setSelectedImageUrl(`http://localhost:3000${imageName}`);
+    setSelectedImageUrl(
+      `https://sacalunacoffee-production.up.railway.app${imageName}`
+    );
     setShowImageModal(true);
   };
 
@@ -150,35 +155,6 @@ function MenusPage() {
     setShowImageModal(false);
     setSelectedImageUrl("");
   };
-
-  // const handleDelete = async (id, name) => {
-  //   const confirmed = window.confirm(
-  //     `Apakah kamu yakin ingin menghapus menu "${name}"?`
-  //   );
-  //   if (!confirmed) return;
-
-  //   const token = localStorage.getItem("adminToken");
-  //   try {
-  //     const res = await fetch(`http://localhost:3000/api/menus/${id}`, {
-  //       method: "DELETE",
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     if (!res.ok) {
-  //       await handleAuthenticationError(res);
-  //       return;
-  //     }
-
-  //     const data = await res.json();
-  //     alert(data.message);
-  //     fetchMenus();
-  //   } catch (err) {
-  //     console.error("Error deleting menu:", err);
-  //     alert("Gagal menghapus menu.");
-  //   }
-  // };
 
   return (
     <div className="min-h-screen flex flex-col">

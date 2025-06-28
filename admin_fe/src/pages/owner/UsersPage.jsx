@@ -71,11 +71,14 @@ function UsersPage() {
     );
 
     try {
-      const res = await fetch("http://localhost:3000/api/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/users",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         await handleAuthenticationError(res);
@@ -153,12 +156,15 @@ function UsersPage() {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:3000/api/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/users/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         await handleAuthenticationError(res);

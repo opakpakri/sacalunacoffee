@@ -21,7 +21,9 @@ function BlogListPage() {
 
   const fetchBlogs = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/blogs");
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/blogs"
+      );
 
       if (!res.ok) throw new Error("Server error");
 

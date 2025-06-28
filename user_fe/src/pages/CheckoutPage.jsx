@@ -19,7 +19,9 @@ function CheckoutPage() {
   // --- Token Validation Effect ---
   useEffect(() => {
     if (tableNumber && token) {
-      fetch(`http://localhost:3000/api/tables/validate/${tableNumber}/${token}`)
+      fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/tables/validate/${tableNumber}/${token}`
+      )
         .then((res) => {
           if (!res.ok) throw new Error("Invalid token");
           return res.json();

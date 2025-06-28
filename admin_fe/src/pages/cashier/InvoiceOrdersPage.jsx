@@ -69,7 +69,7 @@ function InvoiceOrdersPage() {
       try {
         const token = localStorage.getItem("adminToken"); // <--- Dapatkan token
         const response = await fetch(
-          `http://localhost:3000/api/transactions-cashier/${trans.id_order}/items`,
+          `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${trans.id_order}/items`,
           {
             headers: {
               Authorization: `Bearer ${token}`, // <--- Sertakan token di header

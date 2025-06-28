@@ -18,7 +18,9 @@ function BlogViewPage() {
 
   const fetchBlog = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/blogs/${id}`);
+      const res = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/blogs/${id}`
+      );
 
       if (!res.ok) throw new Error("Server error");
 

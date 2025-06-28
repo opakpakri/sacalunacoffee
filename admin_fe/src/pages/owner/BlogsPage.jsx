@@ -77,11 +77,14 @@ function BlogsPage() {
     );
 
     try {
-      const res = await fetch("http://localhost:3000/api/blogs", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/blogs",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         await handleAuthenticationError(res);
@@ -164,12 +167,15 @@ function BlogsPage() {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:3000/api/blogs/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/blogs/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         await handleAuthenticationError(res);
@@ -351,7 +357,7 @@ function BlogsPage() {
 
             {modalType === "image" ? (
               <img
-                src={`http://localhost:3000${modalContent}`}
+                src={`https://sacalunacoffee-production.up.railway.app${modalContent}`}
                 alt="Blog"
                 className="w-full h-auto object-contain rounded"
               />

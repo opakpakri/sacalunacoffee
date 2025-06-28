@@ -64,7 +64,9 @@ function Home() {
   // 🔒 Validasi token meja
   useEffect(() => {
     if (tableNumber && token) {
-      fetch(`http://localhost:3000/api/tables/validate/${tableNumber}/${token}`)
+      fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/tables/validate/${tableNumber}/${token}`
+      )
         .then((res) => {
           if (!res.ok) throw new Error("Invalid token");
           return res.json();
@@ -72,7 +74,7 @@ function Home() {
         .then(() => {
           setIsValidTable(true);
           return fetch(
-            `http://localhost:3000/api/tables/number/${tableNumber}`
+            `https://sacalunacoffee-production.up.railway.app/api/tables/number/${tableNumber}`
           );
         })
         .then((res) => res.json())
@@ -88,7 +90,7 @@ function Home() {
 
   // 📥 Fetch semua menu
   useEffect(() => {
-    fetch("http://localhost:3000/api/menus")
+    fetch("https://sacalunacoffee-production.up.railway.app/api/menus")
       .then((response) => response.json())
       .then((data) => {
         if (data?.data) {

@@ -81,14 +81,17 @@ function AddBarcodesPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("http://localhost:3000/api/tables/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ table_number: tableNumber }),
-      });
+      const response = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/tables/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ table_number: tableNumber }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json(); // Parse JSON for detailed error messages

@@ -60,11 +60,14 @@ function EditBarcodesPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/tables/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);
@@ -109,14 +112,17 @@ function EditBarcodesPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(`http://localhost:3000/api/tables/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ table_number: tableNumber }),
-      });
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ table_number: tableNumber }),
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);

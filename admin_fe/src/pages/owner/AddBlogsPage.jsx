@@ -101,13 +101,16 @@ function AddBlogsPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("http://localhost:3000/api/blogs", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/blogs",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         await handleAuthenticationError(response);

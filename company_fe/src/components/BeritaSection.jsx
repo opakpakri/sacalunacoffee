@@ -17,7 +17,9 @@ const BeritaSection = () => {
 
   const fetchBlogs = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/blogs");
+      const res = await fetch(
+        "https://sacalunacoffee-production.up.railway.app/api/blogs"
+      );
       const data = await res.json();
 
       const sortedBlogs = data.data
@@ -90,7 +92,7 @@ const BeritaSection = () => {
               <div className="w-full h-52 overflow-hidden rounded-t-xl">
                 {" "}
                 <img
-                  src={`http://localhost:3000${blog.image_blog}`}
+                  src={`https://sacalunacoffee-production.up.railway.app${blog.image_blog}`}
                   alt={blog.title || "Gambar Berita"}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"

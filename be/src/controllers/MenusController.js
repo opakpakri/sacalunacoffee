@@ -1,5 +1,5 @@
 const pool = require("../config/db");
-const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
+const cloudinary = require("../config/cloudinary");
 
 const getAllMenus = async (req, res) => {
   try {
@@ -16,11 +16,9 @@ const getAllMenus = async (req, res) => {
 const addMenu = async (req, res) => {
   try {
     const { name_menu, price, category } = req.body;
-    // req.file?.path akan berisi URL gambar dari Cloudinary
     const imageUrl = req.file?.path;
 
     if (!name_menu || !price || !category || !imageUrl) {
-      // Jika ada gambar yang terupload ke Cloudinary tapi validasi gagal, hapus gambar tersebut
       if (req.file && req.file.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
@@ -28,8 +26,6 @@ const addMenu = async (req, res) => {
         .status(400)
         .json({ message: "Semua field harus diisi, termasuk gambar" });
     }
-
-    // Simpan URL Cloudinary ke database
     const query = `INSERT INTO menus (name_menu, price, category_menu, image_menu) VALUES (?, ?, ?, ?)`;
     await pool.query(query, [name_menu, price, category, imageUrl]);
 
@@ -38,7 +34,6 @@ const addMenu = async (req, res) => {
       .json({ message: "Menu added successfully", imageUrl: imageUrl });
   } catch (err) {
     console.error("Error adding menu:", err.message);
-    // Jika ada gambar yang terupload ke Cloudinary sebelum error DB, hapus juga
     if (req.file && req.file.public_id) {
       try {
         await cloudinary.uploader.destroy(req.file.public_id);
@@ -78,7 +73,9 @@ const updateMenu = async (req, res) => {
 
     if (newImageUrl && oldImageUrl) {
       try {
-        const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
+        const publicIdMatch = oldImageUrl.match(
+          /\/upload\/(?:v\d+\/)?(.+)\.\w+$/
+        );
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
           await cloudinary.uploader.destroy(publicId);
@@ -95,16 +92,14 @@ const updateMenu = async (req, res) => {
           "Error deleting old image from Cloudinary:",
           deleteErr.message
         );
-        // Lanjutkan update DB meskipun gagal menghapus gambar lama di Cloudinary
       }
     }
 
-    // Tentukan URL gambar yang akan disimpan ke DB: gunakan yang baru jika ada, jika tidak, pertahankan yang lama
     const imageUrlToSave = newImageUrl || oldImageUrl;
 
     await pool.query(
       `UPDATE menus SET name_menu = ?, price = ?, category_menu = ?, image_menu = ? WHERE id_menu = ?`,
-      [name_menu, price, category, imageUrlToSave, id] // Simpan URL Cloudinary ke database
+      [name_menu, price, category, imageUrlToSave, id]
     );
 
     res
@@ -127,7 +122,7 @@ const getMenuById = async (req, res) => {
       return res.status(404).json({ message: "Menu not found" });
     }
 
-    res.status(200).json(rows[0]); // Mengembalikan objek menu langsung, bukan { data: rows[0] }
+    res.status(200).json(rows[0]);
   } catch (error) {
     console.error("Error fetching menu by id:", error.message);
     res.status(500).json({ message: "Failed to retrieve menu" });
@@ -148,12 +143,10 @@ const deleteMenu = async (req, res) => {
 
     const imageUrlToDelete = rows[0].image_menu;
 
-    // Hapus gambar dari Cloudinary jika ada
     if (imageUrlToDelete) {
       try {
-        // Ekstrak public_id dari URL Cloudinary untuk menghapusnya
         const publicIdMatch = imageUrlToDelete.match(
-          /\/upload\/\w+\/(.+)\.\w+$/
+          /\/upload\/(?:v\d+\/)?(.+)\.\w+$/
         );
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
@@ -169,7 +162,6 @@ const deleteMenu = async (req, res) => {
           "Error deleting image from Cloudinary:",
           deleteErr.message
         );
-        // Lanjutkan penghapusan DB meskipun gagal menghapus gambar dari Cloudinary
       }
     }
 

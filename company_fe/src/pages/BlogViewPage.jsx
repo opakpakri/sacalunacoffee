@@ -140,7 +140,7 @@ function BlogViewPage() {
 
             <div className="mt-12 text-center text-gray-500 text-sm flex items-center justify-center gap-2">
               <FontAwesomeIcon icon={faNewspaper} className="text-gray-400" />
-              <span>Artikel oleh Sacaluna Coffee &copy; 2024</span>
+              <span>Artikel oleh Sacaluna Coffee</span>
             </div>
           </>
         ) : (

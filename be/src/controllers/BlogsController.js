@@ -118,7 +118,7 @@ const getBlogById = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Blog tidak ditemukan" });
     }
-    res.status(200).json({ data: rows[0] });
+    res.status(200).json(rows[0]);
   } catch (err) {
     console.error("Error fetching blog by ID:", err.message);
     res.status(500).json({ message: "Gagal mengambil blog" });
@@ -136,7 +136,9 @@ const deleteBlog = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Blog not found" });
     }
-    const imageUrlToDelete = rows[0].image_blog; // Hapus gambar dari Cloudinary jika ada
+
+    const imageUrlToDelete = rows[0].image_blog;
+
     if (imageUrlToDelete) {
       try {
         const publicIdMatch = imageUrlToDelete.match(
@@ -161,6 +163,7 @@ const deleteBlog = async (req, res) => {
         );
       }
     }
+
     await pool.query("DELETE FROM blogs WHERE id_blog = ?", [id]);
     res.json({ message: "Blog berhasil dihapus" });
   } catch (err) {

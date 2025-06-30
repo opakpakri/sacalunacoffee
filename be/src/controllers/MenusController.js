@@ -60,7 +60,6 @@ const updateMenu = async (req, res) => {
   try {
     const { id } = req.params;
     const { name_menu, price, category } = req.body;
-    // Dapatkan URL gambar baru dari Cloudinary (jika ada upload baru)
     const newImageUrl = req.file?.path;
 
     const [rows] = await pool.query(
@@ -69,7 +68,6 @@ const updateMenu = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      // Jika menu tidak ditemukan tapi ada gambar baru terupload, hapus gambar baru tersebut
       if (newImageUrl && req.file?.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
@@ -78,11 +76,8 @@ const updateMenu = async (req, res) => {
 
     const oldImageUrl = rows[0].image_menu;
 
-    // Logika untuk menghapus gambar lama di Cloudinary jika ada gambar baru yang diunggah
     if (newImageUrl && oldImageUrl) {
       try {
-        // Ekstrak public_id dari oldImageUrl untuk menghapusnya dari Cloudinary
-        // Regex ini menangani format URL Cloudinary dan mendapatkan folder/public_id
         const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];

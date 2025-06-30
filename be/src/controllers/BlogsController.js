@@ -1,5 +1,6 @@
 const pool = require("../config/db");
-const cloudinary = require("../config/cloudinary");
+
+const cloudinary = require("../config/cloudinary"); // Impor instance Cloudinary yang sudah dikonfigurasi
 
 const getAllBlogs = async (req, res) => {
   try {
@@ -15,13 +16,14 @@ const getAllBlogs = async (req, res) => {
 
 const addBlog = async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const { title, content } = req.body; // req.file?.path akan berisi URL gambar dari Cloudinary
     const imageUrl = req.file?.path;
 
     if (!title || !content || !imageUrl) {
       if (req.file && req.file.public_id) {
         await cloudinary.uploader.destroy(req.file.public_id);
       }
+
       return res
         .status(400)
         .json({ message: "Semua field harus diisi, termasuk gambar" });
@@ -35,7 +37,8 @@ const addBlog = async (req, res) => {
       .status(201)
       .json({ message: "Blog berhasil ditambahkan", imageUrl: imageUrl });
   } catch (err) {
-    console.error("Error adding blog:", err.message);
+    console.error("Error adding blog:", err.message); // Jika ada gambar yang terupload ke Cloudinary sebelum error DB, hapus juga
+
     if (req.file && req.file.public_id) {
       try {
         await cloudinary.uploader.destroy(req.file.public_id);
@@ -73,9 +76,7 @@ const updateBlog = async (req, res) => {
     const oldImageUrl = oldData[0].image_blog;
     if (newImageUrl && oldImageUrl) {
       try {
-        const publicIdMatch = oldImageUrl.match(
-          /\/upload\/(?:v\d+\/)?(.+)\.\w+$/
-        );
+        const publicIdMatch = oldImageUrl.match(/\/upload\/\w+\/(.+)\.\w+$/);
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
           await cloudinary.uploader.destroy(publicId);
@@ -137,14 +138,18 @@ const deleteBlog = async (req, res) => {
     }
 
     const imageUrlToDelete = rows[0].image_blog;
+
     if (imageUrlToDelete) {
       try {
         const publicIdMatch = imageUrlToDelete.match(
-          /\/upload\/(?:v\d+\/)?(.+)\.\w+$/
+          /\/upload\/\w+\/(.+)\.\w+$/
         );
+
         if (publicIdMatch && publicIdMatch[1]) {
           const publicId = publicIdMatch[1];
+
           await cloudinary.uploader.destroy(publicId);
+
           console.log(`Gambar berhasil dihapus dari Cloudinary: ${publicId}`);
         } else {
           console.warn(
@@ -158,6 +163,7 @@ const deleteBlog = async (req, res) => {
         );
       }
     }
+
     await pool.query("DELETE FROM blogs WHERE id_blog = ?", [id]);
     res.json({ message: "Blog berhasil dihapus" });
   } catch (err) {

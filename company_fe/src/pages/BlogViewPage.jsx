@@ -8,13 +8,14 @@ import {
   faTimesCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import bgImage from "../assets/Images/bgImage.jpg"; // Pastikan path benar
+import bgImage from "../assets/Images/bgImage.jpg";
 
 function BlogViewPage() {
   const { id } = useParams();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fetchBlog = async () => {
     try {
@@ -22,20 +23,29 @@ function BlogViewPage() {
         `https://sacalunacoffee-production.up.railway.app/api/blogs/${id}`
       );
 
-      if (!res.ok) throw new Error("Server error");
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error("Artikel tidak ditemukan.");
+        }
+        throw new Error(
+          `Kesalahan server (${res.status}) saat mengambil artikel.`
+        );
+      }
 
       const data = await res.json();
-      // Pastikan data yang diterima ada dan sesuai struktur { data: blogObject }
-      if (data && data.data) {
-        setBlog(data.data);
+
+      if (data) {
+        setBlog(data);
       } else {
-        throw new Error("Artikel blog tidak ditemukan atau data tidak valid.");
+        throw new Error("Struktur data blog tidak valid atau kosong.");
       }
       setHasError(false);
+      setErrorMessage("");
     } catch (error) {
       console.error("Gagal mengambil data blog:", error);
       setHasError(true);
-      setBlog(null); // Pastikan blog kosong jika ada error
+      setErrorMessage(error.message);
+      setBlog(null);
     } finally {
       setLoading(false);
     }
@@ -44,7 +54,7 @@ function BlogViewPage() {
   useEffect(() => {
     fetchBlog();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]); // id sebagai dependency karena URL berubah saat navigasi
+  }, [id]);
 
   const formatBlogDate = (dateString) => {
     if (!dateString) return "Tanggal Tidak Tersedia";
@@ -75,18 +85,21 @@ function BlogViewPage() {
           <div className="flex flex-col items-center justify-center min-h-[400px] text-red-600">
             <FontAwesomeIcon icon={faTimesCircle} className="text-5xl mb-4" />
             <p className="text-xl font-semibold mb-2">
-              Terjadi Kesalahan Server
+              Terjadi Kesalahan: {errorMessage}{" "}
             </p>
             <p className="text-lg text-gray-700 text-center max-w-md">
-              Gagal memuat artikel. Silakan coba lagi nanti atau hubungi
-              dukungan.
+              {errorMessage.includes("tidak ditemukan")
+                ? "Maaf, artikel yang Anda cari tidak ada atau sudah dihapus."
+                : "Gagal memuat artikel. Silakan coba lagi nanti atau hubungi dukungan."}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-            >
-              Coba Lagi
-            </button>
+            {!errorMessage.includes("tidak ditemukan") && (
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Coba Lagi
+              </button>
+            )}
           </div>
         ) : blog ? (
           <>
@@ -109,7 +122,7 @@ function BlogViewPage() {
 
             <div className="flex justify-center mb-8">
               <img
-                src={blog.image_blog} // <<< UBAH DI SINI: Langsung pakai URL Cloudinary
+                src={blog.image_blog}
                 alt={blog.title}
                 className="w-full max-w-4xl h-auto max-h-[550px] object-cover rounded-xl shadow-lg border border-gray-200"
                 loading="lazy"
@@ -117,7 +130,7 @@ function BlogViewPage() {
                   e.target.onerror = null;
                   e.target.src =
                     "https://placehold.co/800x550/cccccc/000000?text=Image+Load+Error";
-                }} // Fallback image
+                }}
               />
             </div>
 
@@ -131,7 +144,7 @@ function BlogViewPage() {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[400px] text-red-600">
+          <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-600">
             <FontAwesomeIcon
               icon={faNewspaper}
               className="text-5xl mb-4 text-gray-500"

@@ -16,13 +16,23 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     const subfolder = getUploadSubfolder(req.uploadType);
-    const originalFilename = path.parse(file.originalname).name;
+
+    // --- PERUBAHAN UTAMA DI SINI ---
+    // 1. Ambil nama file asli tanpa ekstensi
+    const originalNameWithoutExt = path.parse(file.originalname).name;
+    // 2. Ganti semua spasi (satu atau lebih) dengan underscore (_)
+    //    Ini akan memastikan public_id yang disimpan di Cloudinary tidak mengandung spasi
+    const cleanedFilename = originalNameWithoutExt.replace(/\s+/g, "_");
+    // --- AKHIR PERUBAHAN ---
+
+    // Menggunakan Date.now() sebagai timestamp (sesuai dengan kode Anda)
+    const timestamp = Date.now();
 
     return {
       folder: subfolder,
-      public_id: `${originalFilename}-${Date.now()}`,
-      format: "webp",
-      transformation: [{ width: 800, height: 600, crop: "limit" }],
+      public_id: `${cleanedFilename}-${timestamp}`, // Menggunakan nama file yang sudah dibersihkan
+      format: "webp", // Pastikan format yang konsisten dan efisien
+      transformation: [{ width: 800, height: 600, crop: "limit" }], // Contoh transformasi
     };
   },
 });

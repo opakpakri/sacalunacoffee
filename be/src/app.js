@@ -3,6 +3,26 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+const allowedOrigins = [
+  "https://sacalunacoffee-admin.vercel.app/",
+  "https://sacalunacoffee-menu.vercel.app/",
+  "https://sacalunacoffee.vercel.app/",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error("Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 // Import Routes
 const menusRoutes = require("./routes/MenusRoutes");
 const authRoutes = require("./routes/AuthRoutes");

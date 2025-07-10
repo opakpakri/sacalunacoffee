@@ -17,6 +17,8 @@ const allowedOrigins = [
   "https://sacalunacoffee-admin.vercel.app",
   "https://sacalunacoffee-menu.vercel.app",
   "https://sacalunacoffee.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
 ];
 
 app.use(

@@ -233,6 +233,7 @@ function MenusPage({ addToCart, searchTerm }) {
                               }
                               aria-label={`Tambahkan ${menu.name_menu} ke keranjang`}
                             >
+                              {/* Logika kondisional untuk menampilkan ikon */}
                               <FontAwesomeIcon
                                 icon={
                                   addedToCartStatus[menu.id_menu]

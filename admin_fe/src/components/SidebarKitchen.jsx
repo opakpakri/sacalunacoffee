@@ -15,7 +15,7 @@ function SidebarKitchen({ isSidebarOpen, toggleSidebar }) {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [location.pathname]); // Added isSidebarOpen, toggleSidebar to dependencies
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleResize = () => {

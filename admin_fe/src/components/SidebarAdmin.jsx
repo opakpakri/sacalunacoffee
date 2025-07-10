@@ -23,7 +23,7 @@ function SidebarAdmin({ isSidebarOpen, toggleSidebar }) {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [location.pathnamer]);
+  }, [location.pathnamer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleResize = () => {

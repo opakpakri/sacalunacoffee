@@ -100,7 +100,7 @@ function BarcodesPage() {
       return;
     }
     fetchTables();
-  }, [navigate]);
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTables = useCallback(async () => {
     setTableLoading(true);

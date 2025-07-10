@@ -204,7 +204,7 @@ function MenusPage({ addToCart, searchTerm }) {
                           )}
                           {/* Pastikan URL gambar ini benar, sesuai diskusi sebelumnya */}
                           <img
-                            src={`https://sacalunacoffee-production.up.railway.app${menu.image_menu}`}
+                            src={menu.image_menu}
                             alt={menu.name_menu}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                             loading="lazy"
@@ -221,8 +221,8 @@ function MenusPage({ addToCart, searchTerm }) {
                             </span>
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent card click from interfering
-                                handleAddToCartClick(menu); // Panggil fungsi handler baru
+                                e.stopPropagation();
+                                handleAddToCartClick(menu);
                               }}
                               className="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center shadow-md
                                          hover:bg-yellow-600 hover:scale-110 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-700"
@@ -233,7 +233,6 @@ function MenusPage({ addToCart, searchTerm }) {
                               }
                               aria-label={`Tambahkan ${menu.name_menu} ke keranjang`}
                             >
-                              {/* Logika kondisional untuk menampilkan ikon */}
                               <FontAwesomeIcon
                                 icon={
                                   addedToCartStatus[menu.id_menu]

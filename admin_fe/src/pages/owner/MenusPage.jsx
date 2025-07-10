@@ -316,11 +316,6 @@ function MenusPage() {
               src={selectedImageUrl}
               alt="Menu"
               className="w-full h-auto object-contain rounded"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src =
-                  "https://placehold.co/400x300/cccccc/000000?text=Image+Load+Error";
-              }}
             />
           </div>
         </div>

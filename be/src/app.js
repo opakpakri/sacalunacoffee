@@ -1,12 +1,22 @@
-require("dotenv").config();
+require("dotenv").config(); // Memuat variabel lingkungan dari file .env
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const app = express();
 
+const PORT = process.env.PORT || 3000;
+const SECRET_KEY = process.env.SECRET_KEY || "default_secret";
+console.log("SECRET_KEY:", SECRET_KEY);
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Daftar origin yang diizinkan untuk CORS
 const allowedOrigins = [
-  "https://sacalunacoffee-admin.vercel.app/",
-  "https://sacalunacoffee-menu.vercel.app/",
-  "https://sacalunacoffee.vercel.app/",
+  "https://sacalunacoffee-admin.vercel.app",
+  "https://sacalunacoffee-menu.vercel.app",
+  "https://sacalunacoffee.vercel.app",
 ];
 
 app.use(
@@ -23,6 +33,8 @@ app.use(
   })
 );
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Import Routes
 const menusRoutes = require("./routes/MenusRoutes");
 const authRoutes = require("./routes/AuthRoutes");
@@ -34,22 +46,7 @@ const PaymentsRoutes = require("./routes/PaymentsRoutes");
 const TransactionCashierRoutes = require("./routes/TransactionCashierRoutes");
 const TransactionKitchenRoutes = require("./routes/TransactionKitchenRoutes");
 const HistoryRoutes = require("./routes/HistoryRoutes");
-const authenticate = require("./middlewares/AuthMiddlewares"); // <-- Import middleware Anda dengan nama file yang benar
-
-const app = express();
-
-// Env Variables
-const PORT = process.env.PORT || 3000;
-const SECRET_KEY = process.env.SECRET_KEY || "default_secret";
-console.log("SECRET_KEY:", SECRET_KEY);
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve static files (e.g., uploaded images)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+const authenticate = require("./middlewares/AuthMiddlewares");
 
 // Routes
 app.use("/api/login", authRoutes);
@@ -61,14 +58,14 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/payments", PaymentsRoutes);
 app.use("/api/transactions-cashier", authenticate, TransactionCashierRoutes);
 app.use("/api/transactions-kitchen", authenticate, TransactionKitchenRoutes);
-app.use("/api/historys-admin", authenticate, HistoryRoutes); //
+app.use("/api/historys-admin", authenticate, HistoryRoutes);
 
 // Root route
 app.get("/", (req, res) => {
   res.send("API is running");
 });
 
-// 404 handler
+// 404 handler (untuk rute yang tidak ditemukan)
 app.use((req, res) => {
   res.status(404).json({ error: "Endpoint Not Found" });
 });

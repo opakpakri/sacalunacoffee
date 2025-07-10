@@ -149,10 +149,8 @@ function MenusPage() {
     }
   }, [searchTerm, initialLoading]);
 
-  const openImageModal = (imageName) => {
-    setSelectedImageUrl(
-      `https://sacalunacoffee-production.up.railway.app${imageName}`
-    );
+  const openImageModal = (imageUrl) => {
+    setSelectedImageUrl(imageUrl);
     setShowImageModal(true);
   };
 

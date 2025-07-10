@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import CryptoJS from "crypto-js";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
@@ -13,6 +13,19 @@ const SECRET_KEY = "sacaluna_secret_key";
 
 function AddUsersPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     username: "",
@@ -120,16 +133,15 @@ function AddUsersPage() {
       );
 
       if (!response.ok) {
-        // <<< Bagian ini yang perlu penyesuaian
-        const errorData = await response.json(); // Coba parsing error JSON
+        const errorData = await response.json();
         if (
           response.status === 409 &&
           errorData.message === "Email sudah terdaftar"
         ) {
-          alert("Email sudah terdaftar. Mohon gunakan email lain."); // Tampilkan alert spesifik
-          setAuthError("Email sudah terdaftar. Mohon gunakan email lain."); // Atau set state error
+          alert("Email sudah terdaftar. Mohon gunakan email lain.");
+          setAuthError("Email sudah terdaftar. Mohon gunakan email lain.");
         } else {
-          await handleAuthenticationError(response); // Gunakan fungsi penanganan error umum
+          await handleAuthenticationError(response);
         }
         return;
       }
@@ -146,11 +158,16 @@ function AddUsersPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Add New User</h1>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Add New User
+          </h1>
 
           {authError && (
             <div
@@ -164,11 +181,13 @@ function AddUsersPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative p-4 md:p-8"
           >
-            <div className="flex-1 p-12 space-y-4 relative">
+            <div className="flex-1 flex flex-col space-y-4 justify-start">
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Username</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Username
+                </label>
                 <input
                   name="username"
                   type="text"
@@ -183,13 +202,15 @@ function AddUsersPage() {
                       "Silakan isi username terlebih dahulu"
                     )
                   }
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Email</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Email
+                </label>
                 <input
                   name="email"
                   type="email"
@@ -207,13 +228,15 @@ function AddUsersPage() {
                     }
                   }}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
 
               <div className="flex flex-col relative">
-                <label className="text-lg font-bold mb-1">Password</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Password
+                </label>
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
@@ -231,11 +254,11 @@ function AddUsersPage() {
                     }
                   }}
                   minLength={8}
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
                 <div
-                  className="absolute right-3 top-[54px] cursor-pointer text-gray-600"
+                  className="absolute right-3 top-[55%] -translate-y-1/2 cursor-pointer text-gray-600"
                   onClick={togglePassword}
                 >
                   {showPassword ? <FaEye /> : <FaEyeSlash />}
@@ -243,7 +266,9 @@ function AddUsersPage() {
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Role</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Role
+                </label>
                 <div className="relative">
                   <select
                     name="role"
@@ -257,7 +282,7 @@ function AddUsersPage() {
                         "Silakan pilih role terlebih dahulu"
                       )
                     }
-                    className="appearance-none w-full px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="appearance-none w-full px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                     required
                   >
                     <option value="" disabled>
@@ -273,12 +298,11 @@ function AddUsersPage() {
                 </div>
               </div>
 
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+              <div className="mt-8 md:mt-12 flex justify-center">
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -287,28 +311,29 @@ function AddUsersPage() {
                       className="text-lg"
                     />
                   ) : (
-                    <FontAwesomeIcon
-                      icon={faCirclePlus}
-                      className="group-hover:text-black text-lg"
-                    />
+                    <FontAwesomeIcon icon={faCirclePlus} className="text-lg" />
                   )}
                   {submitLoading ? "Menambahkan..." : "Add User"}{" "}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 hidden lg:flex items-center justify-center">
               <img
                 src={signImage}
                 alt="User Illustration"
-                className="object-cover w-full h-full"
+                className="object-contain w-full h-auto max-h-full"
               />
             </div>
           </form>
 
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm  font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

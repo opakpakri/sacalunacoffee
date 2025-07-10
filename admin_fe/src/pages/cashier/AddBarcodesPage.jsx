@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import Navbar from "../../components/Navbar";
 import LogoImage from "../../assets/images/logo.webp";
 import signImage from "../../assets/images/signImage.webp";
@@ -10,9 +10,21 @@ import SidebarCashier from "../../components/SidebarCashier";
 function AddBarcodesPage() {
   const [tableNumber, setTableNumber] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [formError, setFormError] = useState(null); // State for form-specific errors
+  const [formError, setFormError] = useState(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -69,13 +81,13 @@ function AddBarcodesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    setFormError(null); // Clear previous form-specific errors
-    setSubmitLoading(true); // Activate loading state
+    setFormError(null);
+    setSubmitLoading(true);
 
     if (!tableNumber.trim()) {
-      alert("Nomor meja tidak boleh kosong!"); // Alert for empty input
-      setFormError("Nomor meja tidak boleh kosong!"); // Set form-specific error
-      setSubmitLoading(false); // Deactivate loading if validation fails
+      alert("Nomor meja tidak boleh kosong!");
+      setFormError("Nomor meja tidak boleh kosong!");
+      setSubmitLoading(false);
       return;
     }
 
@@ -94,41 +106,44 @@ function AddBarcodesPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json(); // Parse JSON for detailed error messages
+        const errorData = await response.json();
         if (response.status === 409) {
-          // Handle 409 Conflict: Table number already exists
           const errorMessage = errorData.message || "Nomor meja sudah ada.";
-          alert(errorMessage); // Added: Alert for duplicate table number
-          setFormError(errorMessage); // Set form-specific error
+          alert(errorMessage);
+          setFormError(errorMessage);
         } else {
-          // For any other non-OK status, delegate to the general authentication error handler
           await handleAuthenticationError(response);
         }
-        return; // Stop further execution after handling the error
+        return;
       }
 
-      const data = await response.json(); // Parse successful response
+      const data = await response.json();
 
-      alert(data.message); // Show success message
-      navigate("/barcodeCashier"); // Redirect on success
+      alert(data.message);
+      navigate("/barcodeCashier");
     } catch (error) {
       console.error("Error adding table:", error);
-      alert("Terjadi kesalahan saat menambahkan meja."); // General alert for network/unexpected errors
-      setFormError("Terjadi kesalahan saat menambahkan meja: " + error.message); // Catch network or unexpected errors
+      alert("Terjadi kesalahan saat menambahkan meja.");
+      setFormError("Terjadi kesalahan saat menambahkan meja: " + error.message);
     } finally {
-      setSubmitLoading(false); // Deactivate loading state regardless of success or failure
+      setSubmitLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarCashier />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Add New Table</h1>
-
-          {/* Display general authentication errors */}
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        {" "}
+        <SidebarCashier
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          {" "}
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Add New Table
+          </h1>{" "}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -138,14 +153,16 @@ function AddBarcodesPage() {
               <span className="block sm:inline ml-2">{authError}</span>
             </div>
           )}
-
           <form
             onSubmit={handleSubmit}
-            className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative" /* Responsive height, flex direction, and gap */
           >
-            <div className="flex-1 p-12 space-y-4 relative">
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
+              {" "}
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Nomor Meja</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Nomor Meja
+                </label>{" "}
                 <input
                   name="table_number"
                   type="text"
@@ -153,29 +170,29 @@ function AddBarcodesPage() {
                   value={tableNumber}
                   onChange={(e) => {
                     setTableNumber(e.target.value);
-                    e.target.setCustomValidity(""); // Clear browser's validation message
-                    setFormError(null); // Clear form error when input changes
+                    e.target.setCustomValidity("");
+                    setFormError(null);
                   }}
                   onInvalid={(e) =>
                     e.target.setCustomValidity(
                       "Silakan isi nomor meja terlebih dahulu"
                     )
                   }
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base" /* Responsive padding and font size */
                   required
                 />
-                {/* Display form-specific errors directly below the input */}
                 {formError && (
-                  <p className="text-red-500 text-sm mt-2">{formError}</p>
+                  <p className="text-red-500 text-xs md:text-sm mt-2">
+                    {formError}
+                  </p>
                 )}
               </div>
-
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+              <div className="mt-8 md:mt-12 flex justify-center">
+                {" "}
                 <button
                   type="submit"
-                  disabled={submitLoading} // Disable button while loading
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={submitLoading}
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed" /* Responsive width, padding, and font size */
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -184,17 +201,15 @@ function AddBarcodesPage() {
                       className="text-lg"
                     />
                   ) : (
-                    <FontAwesomeIcon
-                      icon={faCirclePlus}
-                      className="group-hover:text-black text-lg"
-                    />
+                    <FontAwesomeIcon icon={faCirclePlus} className="text-lg" />
                   )}
-                  {submitLoading ? "Menambahkan..." : "Add Table"}{" "}
+                  {submitLoading ? "Menambahkan..." : "Add Table"}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center">
+            <div className="hidden lg:flex-1 lg:flex items-center justify-center">
+              {" "}
               <img
                 src={signImage}
                 alt="Table Illustration"
@@ -202,10 +217,13 @@ function AddBarcodesPage() {
               />
             </div>
           </form>
-
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

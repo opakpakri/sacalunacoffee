@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarKitchen from "../../components/SidebarKitchen";
 import LogoImage from "../../assets/images/logo.webp";
@@ -8,9 +8,8 @@ import {
   faXmark,
   faSpinner,
   faTimesCircle,
-} from "@fortawesome/free-solid-svg-icons"; // Tambahkan ikon yang dibutuhkan
+} from "@fortawesome/free-solid-svg-icons";
 
-// Helper function for status classes
 const getStatusClass = (status) => {
   switch (status) {
     case "pending":
@@ -18,7 +17,7 @@ const getStatusClass = (status) => {
       return "bg-gray-200 text-gray-800";
     case "processing":
       return "bg-orange-200 text-orange-800";
-    case "completed": // <-- Hanya gunakan 'completed' untuk status selesai
+    case "completed":
       return "bg-green-200 text-green-800";
     case "canceled":
       return "bg-red-200 text-red-800";
@@ -29,6 +28,7 @@ const getStatusClass = (status) => {
 
 function TransactionsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +45,17 @@ function TransactionsPage() {
   const [selectedOrderItems, setSelectedOrderItems] = useState([]);
   const [detailModalLoading, setDetailModalLoading] = useState(false);
   const [detailModalError, setDetailModalError] = useState(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -91,7 +102,7 @@ function TransactionsPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const url = `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/today?searchTerm=${searchTerm}`;
+      const url = `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/today?searchTerm=${searchTerm}`;
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -144,7 +155,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/${transaction.id_order}/items`,
+        `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -174,9 +185,6 @@ function TransactionsPage() {
   };
 
   const handleOrderStatusChange = async (id_order, newStatus) => {
-    // Confirmation is now handled by the specific buttons' logic,
-    // or if only one option, it's a direct action.
-    // Retaining window.confirm here for explicit confirmation of any status change.
     const confirmChange = window.confirm(
       `Apakah Anda yakin ingin mengubah status order ${id_order} menjadi "${newStatus}"?`
     );
@@ -187,7 +195,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/${id_order}/status`,
+        `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/${id_order}/status`,
         {
           method: "PUT",
           headers: {
@@ -213,24 +221,34 @@ function TransactionsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarKitchen />
-        <div className="flex-1 p-16">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">Today Transaction</h1>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Cari Data:</label>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        {" "}
+        <SidebarKitchen
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          {" "}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
+            {" "}
+            <h1 className="text-xl md:text-2xl font-bold">
+              Today Transaction
+            </h1>{" "}
+            <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-auto max-w-xs">
+              {" "}
+              <label className="text-sm font-medium whitespace-nowrap">
+                Cari Data:
+              </label>
               <input
                 type="text"
                 placeholder="Search transaction..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="bg-transparent focus:outline-none focus:ring-0 h-full w-full text-sm flex-1"
               />
             </div>
           </div>
-
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -240,26 +258,30 @@ function TransactionsPage() {
               <span className="block sm:inline ml-2">{authError}</span>
             </div>
           )}
-
-          <div className="bg-white border rounded shadow-md w-full h-[700px] overflow-auto">
-            <table className="w-full table-fixed border-collapse text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-200 text-left">
+          <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
+            {" "}
+            <table className="w-full table-auto border-collapse text-xs md:text-sm">
+              {" "}
+              <thead className="sticky top-0 bg-gray-200 text-left">
                 <tr>
-                  <th className="p-3 w-[15%]">ID Order</th>
-                  <th className="p-3 w-[15%]">No. Meja</th>
-                  <th className="p-3 w-[20%]">Waktu Order</th>
-                  <th className="p-3 w-[25%] text-center">Status Order</th>
-                  <th className="p-3 w-[15%] text-center">Detail</th>
+                  <th className="p-2 md:p-3 w-[15%]">ID Order</th>
+                  <th className="p-2 md:p-3 w-[15%]">No. Meja</th>
+                  <th className="p-2 md:p-3 w-[20%]">Waktu Order</th>
+                  <th className="p-2 md:p-3 w-[25%] text-center">
+                    Status Order
+                  </th>
+                  <th className="p-2 md:p-3 w-[15%] text-center">Detail</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody className="text-xs md:text-sm">
+                {" "}
                 {loading ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
                         icon={faSpinner}
                         spin
-                        className="text-3xl text-yellow-500 mb-4"
+                        className="text-2xl md:text-3xl text-yellow-500 mb-4"
                       />
                       <p>Memuat transaksi...</p>
                     </td>
@@ -269,7 +291,7 @@ function TransactionsPage() {
                     <td colSpan="5" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
-                        className="text-3xl text-red-500 mb-4"
+                        className="text-2xl md:text-3xl text-red-500 mb-4"
                       />
                       <p>{error}</p>
                     </td>
@@ -286,9 +308,9 @@ function TransactionsPage() {
                       key={transaction.id_order}
                       className="hover:bg-gray-100"
                     >
-                      <td className="p-3 ">{transaction.id_order}</td>
-                      <td className="p-3 ">{transaction.table_number}</td>
-                      <td className="p-3 ">
+                      <td className="p-2 md:p-3">{transaction.id_order}</td>
+                      <td className="p-2 md:p-3">{transaction.table_number}</td>
+                      <td className="p-2 md:p-3">
                         {new Date(transaction.order_time).toLocaleString(
                           "id-ID",
                           {
@@ -301,10 +323,10 @@ function TransactionsPage() {
                           }
                         )}
                       </td>
-                      <td className="p-3">
+                      <td className="p-2 md:p-3">
                         <button
                           onClick={() => openOrderStatusModal(transaction)}
-                          className={`block w-full py-1 px-2 rounded-md ${getStatusClass(
+                          className={`block w-full py-1 px-2 rounded-md text-xs ${getStatusClass(
                             transaction.order_status
                           )} ${
                             transaction.order_status === "completed" ||
@@ -322,10 +344,10 @@ function TransactionsPage() {
                           {transaction.order_status}
                         </button>
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-2 md:p-3 text-center">
                         <button
                           onClick={() => openDetailModal(transaction)}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline text-xs"
                         >
                           Detail
                         </button>
@@ -336,24 +358,26 @@ function TransactionsPage() {
               </tbody>
             </table>
           </div>
-
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Order Status Modal (Kitchen Version) */}
       {isOrderStatusModalOpen && selectedOrderToChangeStatus && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeOrderStatusModal}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-xl w-96 relative"
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -363,28 +387,28 @@ function TransactionsPage() {
               <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center">
               Ubah Status Pesanan
             </h2>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Order ID:{" "}
               <span className="font-semibold">
                 {selectedOrderToChangeStatus.id_order}
               </span>
             </p>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Nomor Meja:{" "}
               <span className="font-semibold">
                 {selectedOrderToChangeStatus.table_number}
               </span>
             </p>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Nama Customer:{" "}
               <span className="font-semibold">
                 {selectedOrderToChangeStatus.name_customer || "-"}
               </span>
             </p>
-            <p className="text-md mb-4">
+            <p className="text-sm md:text-base mb-4">
               No. Telp:{" "}
               <span className="font-semibold">
                 {selectedOrderToChangeStatus.phone || "-"}
@@ -392,9 +416,11 @@ function TransactionsPage() {
             </p>
 
             <div className="mb-6 text-center">
-              <p className="text-gray-600 mb-2">Status saat ini:</p>
+              <p className="text-gray-600 mb-2 text-sm md:text-base">
+                Status saat ini:
+              </p>
               <span
-                className={`inline-block py-2 px-4 rounded-full text-lg font-bold ${getStatusClass(
+                className={`inline-block py-2 px-4 rounded-full text-md md:text-lg font-bold ${getStatusClass(
                   selectedOrderToChangeStatus.order_status
                 )}`}
               >
@@ -405,7 +431,6 @@ function TransactionsPage() {
             </div>
 
             <div className="flex flex-col gap-3">
-              {/* Buttons to change status based on current status */}
               {selectedOrderToChangeStatus.order_status === "pending" && (
                 <button
                   onClick={() =>
@@ -414,7 +439,7 @@ function TransactionsPage() {
                       "processing"
                     )
                   }
-                  className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
+                  className={`py-2 px-4 rounded-lg font-bold text-sm md:text-base ${getStatusClass(
                     "processing"
                   )} hover:opacity-80 transition-opacity`}
                   disabled={
@@ -432,7 +457,7 @@ function TransactionsPage() {
                       "completed"
                     )
                   }
-                  className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
+                  className={`py-2 px-4 rounded-lg font-bold text-sm md:text-base ${getStatusClass(
                     "completed"
                   )} hover:opacity-80 transition-opacity`}
                   disabled={
@@ -442,41 +467,18 @@ function TransactionsPage() {
                   Set ke Selesai
                 </button>
               )}
-              {/* Removed "Batalkan Order" button */}
-              {/*
-              {(selectedOrderToChangeStatus.order_status === "pending" ||
-                selectedOrderToChangeStatus.order_status === "processing") && (
-                <button
-                  onClick={() =>
-                    handleOrderStatusChange(
-                      selectedOrderToChangeStatus.id_order,
-                      "canceled"
-                    )
-                  }
-                  className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
-                    "canceled"
-                  )} hover:opacity-80 transition-opacity`}
-                  disabled={
-                    selectedOrderToChangeStatus.order_status === "waiting"
-                  }
-                >
-                  Batalkan Order
-                </button>
-              )}
-              */}
             </div>
           </div>
         </div>
       )}
 
-      {/* Order Detail Modal (Kitchen Version) */}
       {isDetailModalOpen && currentDetailTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeDetailModal}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-xl w-[600px] relative max-h-[80vh] overflow-y-auto"
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm md:max-w-md lg:max-w-lg relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -486,29 +488,29 @@ function TransactionsPage() {
               <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center">
               Detail Pesanan
             </h2>
-            <div className="mb-4 text-left">
-              <p className="text-md mb-1">
+            <div className="mb-4 text-left text-sm md:text-base">
+              <p className="mb-1">
                 Order ID:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.id_order}
                 </span>
               </p>
-              <p className="text-md mb-1">
+              <p className="mb-1">
                 Nomor Meja:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.table_number}
                 </span>
               </p>
-              <p className="text-md mb-1">
+              <p className="mb-1">
                 Nama Customer:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.name_customer || "-"}
                 </span>
               </p>
-              <p className="text-md mb-4">
+              <p className="mb-4">
                 No. Telp:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.phone || "-"}
@@ -517,28 +519,32 @@ function TransactionsPage() {
             </div>
 
             {detailModalLoading ? (
-              <p className="text-center text-gray-500">Memuat detail...</p>
+              <p className="text-center text-gray-500 text-sm md:text-base">
+                Memuat detail...
+              </p>
             ) : detailModalError ? (
-              <p className="text-center text-red-600">{detailModalError}</p>
+              <p className="text-center text-red-600 text-sm md:text-base">
+                {detailModalError}
+              </p>
             ) : selectedOrderItems.length === 0 ? (
-              <p className="text-center text-gray-500">
+              <p className="text-center text-gray-500 text-sm md:text-base">
                 Tidak ada item dalam pesanan ini.
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200">
+                <table className="min-w-full bg-white border border-gray-200 text-xs md:text-sm">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="py-2 px-3 text-left text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-left font-semibold text-gray-600">
                         Nama Barang
                       </th>
-                      <th className="py-2 px-3 text-center text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-center font-semibold text-gray-600">
                         Jumlah
                       </th>
-                      <th className="py-2 px-3 text-right text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-right font-semibold text-gray-600">
                         Harga Satuan
                       </th>
-                      <th className="py-2 px-3 text-right text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-right font-semibold text-gray-600">
                         Subtotal
                       </th>
                     </tr>
@@ -547,18 +553,18 @@ function TransactionsPage() {
                     {selectedOrderItems.map((item, index) => (
                       <tr
                         key={index}
-                        className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                        className="border-t border-gray-200 hover:bg-gray-50"
                       >
-                        <td className="py-2 px-3 text-left">
+                        <td className="py-2 px-2 md:px-3 text-left">
                           {item.menu_name || `ID: ${item.id_menu}`}
                         </td>
-                        <td className="py-2 px-3 text-center">
+                        <td className="py-2 px-2 md:px-3 text-center">
                           {item.quantity}
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-2 md:px-3 text-right">
                           Rp {item.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-2 md:px-3 text-right">
                           Rp{" "}
                           {(item.quantity * item.price).toLocaleString("id-ID")}
                         </td>

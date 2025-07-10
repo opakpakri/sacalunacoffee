@@ -1,21 +1,32 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import LogoImage from "../../assets/images/logo.webp";
 import signImage from "../../assets/images/signImage.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSave, faSpinner } from "@fortawesome/free-solid-svg-icons"; // Import faSpinner
+import { faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import SidebarCashier from "../../components/SidebarCashier";
 
 function EditBarcodesPage() {
   const { id } = useParams();
   const [tableNumber, setTableNumber] = useState("");
-  const [loading, setLoading] = useState(true); // Loading for fetching data
-  const [isSaving, setIsSaving] = useState(false); // New: Loading for saving data
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [authError, setAuthError] = useState(null);
 
-  // Centralized function to handle authentication errors and redirect
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -61,7 +72,7 @@ function EditBarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
+        `https://sacalunacoffee-menu.vercel.app/api/tables/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -102,18 +113,18 @@ function EditBarcodesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    setIsSaving(true); // Set saving to true when submit starts
+    setIsSaving(true);
 
     if (!tableNumber.trim()) {
       alert("Nomor meja tidak boleh kosong!");
-      setIsSaving(false); // Reset saving if validation fails
+      setIsSaving(false);
       return;
     }
 
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
+        `https://sacalunacoffee-menu.vercel.app/api/tables/${id}`,
         {
           method: "PUT",
           headers: {
@@ -126,7 +137,7 @@ function EditBarcodesPage() {
 
       if (!response.ok) {
         await handleAuthenticationError(response);
-        return; // Stop execution if auth error
+        return;
       }
 
       const data = await response.json();
@@ -136,27 +147,37 @@ function EditBarcodesPage() {
       console.error("Error updating table:", error);
       setAuthError("Terjadi kesalahan saat mengedit meja: " + error.message);
     } finally {
-      setIsSaving(false); // Always reset saving to false
+      setIsSaving(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Memuat data meja...</p>
+        <FontAwesomeIcon
+          icon={faSpinner}
+          spin
+          className="text-3xl text-yellow-500"
+        />
+        <p className="ml-3 text-lg text-gray-700">Memuat data meja...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarCashier />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Edit Table</h1>
-
-          {/* Bagian untuk menampilkan pesan error autentikasi */}
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        {" "}
+        <SidebarCashier
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          {" "}
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Edit Table
+          </h1>{" "}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -166,16 +187,16 @@ function EditBarcodesPage() {
               <span className="block sm:inline ml-2">{authError}</span>
             </div>
           )}
-
           <form
             onSubmit={handleSubmit}
-            className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative" /* Responsive height, flex direction, and gap */
           >
-            {/* Form Section */}
-            <div className="flex-1 p-12 space-y-4 relative">
-              {/* Nomor Meja */}
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
+              {" "}
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Nomor Meja</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Nomor Meja
+                </label>{" "}
                 <input
                   name="table_number"
                   type="text"
@@ -190,17 +211,16 @@ function EditBarcodesPage() {
                       "Silakan isi nomor meja terlebih dahulu"
                     )
                   }
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base" /* Responsive padding and font size */
                   required
                 />
               </div>
-
-              {/* Submit Button */}
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+              <div className="mt-8 md:mt-12 flex justify-center">
+                {" "}
                 <button
                   type="submit"
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isSaving} // Disable button when saving
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed" /* Responsive width, padding, and font size */
+                  disabled={isSaving}
                 >
                   {isSaving ? (
                     <>
@@ -213,10 +233,7 @@ function EditBarcodesPage() {
                     </>
                   ) : (
                     <>
-                      <FontAwesomeIcon
-                        icon={faSave}
-                        className="group-hover:text-black text-lg"
-                      />
+                      <FontAwesomeIcon icon={faSave} className="text-lg" />
                       Update Table
                     </>
                   )}
@@ -224,8 +241,8 @@ function EditBarcodesPage() {
               </div>
             </div>
 
-            {/* Image Section */}
-            <div className="flex-1 flex items-center justify-center">
+            <div className="hidden lg:flex-1 lg:flex items-center justify-center">
+              {" "}
               <img
                 src={signImage}
                 alt="Table Illustration"
@@ -233,11 +250,13 @@ function EditBarcodesPage() {
               />
             </div>
           </form>
-
-          {/* Footer Logo */}
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm  font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

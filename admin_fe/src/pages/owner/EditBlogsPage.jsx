@@ -1,22 +1,37 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
+import signImage from "../../assets/images/signImage.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner, faSave } from "@fortawesome/free-solid-svg-icons";
 
 function EditBlogsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+
+  // --- Sidebar control states and functions ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
 
   const [form, setForm] = useState({
     title: "",
     content: "",
-    image: null, // File objek untuk upload baru
+    image: null,
   });
-  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru (lokal)
-  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database (Cloudinary URL)
+  const [previewImage, setPreviewImage] = useState(null);
+  const [oldImage, setOldImage] = useState(null);
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -30,7 +45,7 @@ function EditBlogsPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (EditBlogsPage):",
+        "Detail Error Autentikasi (BlogsPage):",
         errorData,
         "Status HTTP:",
         res.status
@@ -77,16 +92,14 @@ function EditBlogsPage() {
         return;
       }
 
-      // Backend sekarang mengirim objek blog langsung, bukan { data: blog }
       const blog = await response.json();
 
       setForm({
         title: blog.title || "",
         content: blog.content || "",
-        image: null, // Reset file input saat fetch
+        image: null,
       });
-      // Langsung gunakan URL dari database karena sudah URL Cloudinary penuh
-      setOldImage(blog.image_blog); // Ini akan menjadi URL Cloudinary lengkap
+      setOldImage(blog.image_blog);
     } catch (error) {
       console.error("Gagal fetch blog:", error);
       setAuthError(
@@ -114,13 +127,12 @@ function EditBlogsPage() {
     if (name === "image") {
       const file = files[0];
       setForm({ ...form, image: file });
-      // Buat URL objek lokal untuk preview gambar yang baru dipilih
       if (file) {
         setPreviewImage(URL.createObjectURL(file));
       } else {
-        setPreviewImage(null); // Hapus preview jika file dibatalkan
+        setPreviewImage(null);
       }
-      setOldImage(null); // <<< KUNCI: Hapus gambar lama dari tampilan preview jika ada gambar baru
+      setOldImage(null);
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -135,9 +147,8 @@ function EditBlogsPage() {
     formData.append("title", form.title);
     formData.append("content", form.content);
     if (form.image) {
-      formData.append("image", form.image); // Hanya tambahkan gambar jika ada yang baru dipilih
+      formData.append("image", form.image);
     }
-    // Jika tidak ada gambar baru, backend akan mempertahankan gambar lama
 
     try {
       const token = localStorage.getItem("adminToken");
@@ -154,13 +165,11 @@ function EditBlogsPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Menangani error spesifik dari backend (misalnya konflik nama) atau error umum
         if (
           response.status === 409 &&
           errorData.message &&
           errorData.message.includes("Nama blog sudah ada")
         ) {
-          // <<< Perbarui pesan error jika ada validasi nama blog unik di backend
           alert("Nama blog ini sudah ada. Silakan gunakan nama lain.");
           setAuthError("Nama blog ini sudah ada. Silakan gunakan nama lain.");
         } else {
@@ -182,11 +191,16 @@ function EditBlogsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Edit Blog</h1>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Edit Blog
+          </h1>
 
           {authError && (
             <div
@@ -200,40 +214,50 @@ function EditBlogsPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="relative bg-white border rounded shadow-md flex w-full h-[700px] gap-12"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative"
             encType="multipart/form-data"
           >
-            <div className="flex-1 p-12 space-y-4 relative">
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Judul</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Judul
+                </label>
                 <input
                   name="title"
                   type="text"
+                  placeholder="Masukkan judul blog"
                   value={form.title}
                   onChange={handleChange}
-                  placeholder="Masukkan judul blog"
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Content</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Content
+                </label>
                 <textarea
                   name="content"
                   placeholder="Tulis konten blog di sini..."
                   value={form.content}
                   onChange={handleChange}
-                  className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 min-h-[200px] resize-none"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base min-h-[150px] md:min-h-[200px] resize-y"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Upload Gambar
+                </label>
+                <label className="w-full px-4 py-2 md:py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500 text-sm md:text-base">
                   <span>
-                    {form.image ? form.image.name : "Pilih gambar..."}
+                    {form.image
+                      ? form.image.name
+                      : oldImage
+                      ? "Ganti gambar..."
+                      : "Pilih gambar..."}
                   </span>
                   <input
                     type="file"
@@ -245,12 +269,11 @@ function EditBlogsPage() {
                 </label>
               </div>
 
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+              <div className="mt-8 md:mt-12 flex justify-center">
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -259,63 +282,61 @@ function EditBlogsPage() {
                       className="text-lg"
                     />
                   ) : (
-                    <FontAwesomeIcon
-                      icon={faSave}
-                      className="group-hover:text-black text-lg"
-                    />
+                    <FontAwesomeIcon icon={faSave} className="text-lg" />
                   )}
-                  {submitLoading ? "Mengubah..." : "Update Blog"}{" "}
+                  {submitLoading ? "Mengupdate..." : "Update Blog"}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center relative">
-              {/* Logika tampilan gambar */}
-              {previewImage ? ( // Tampilkan preview gambar baru jika ada
+            <div className="flex-1 flex items-center justify-center">
+              {previewImage ? (
                 <img
                   src={previewImage}
                   alt="Preview Gambar Baru"
-                  className="object-cover w-full h-full rounded"
+                  className="object-contain w-full h-auto max-h-full rounded"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src =
-                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    e.target.src = { signImage };
                   }}
                 />
-              ) : oldImage ? ( // Tampilkan gambar lama jika tidak ada preview gambar baru
-                <div className="relative w-full h-full flex items-center justify-center">
+              ) : oldImage ? (
+                <div className="relative w-full h-full min-h-[150px] md:min-h-[200px] flex items-center justify-center border border-gray-300 rounded overflow-hidden">
                   <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
-                    Gambar lama, upload untuk mengubah menjadi gambar baru
+                    Gambar lama, upload untuk mengubah
                   </div>
                   <img
-                    src={oldImage} // Langsung menggunakan URL Cloudinary dari state
+                    src={oldImage}
                     alt="Gambar Lama"
-                    className="object-cover w-full h-full rounded opacity-70"
+                    className="object-cover w-full h-full opacity-70"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                      e.target.src = { signImage };
                     }}
                   />
                 </div>
               ) : (
-                // Jika tidak ada gambar baru dan tidak ada gambar lama
-                <div className="text-gray-600 font-semibold">
-                  Tidak ada gambar untuk ditampilkan
+                <div className="relative w-full h-full min-h-[150px] md:min-h-[200px] flex items-center justify-center border border-gray-300 rounded overflow-hidden">
+                  <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
+                    Tidak ada gambar untuk ditampilkan
+                  </div>
                   <img
-                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image" // Placeholder jika tidak ada gambar
+                    src={signImage}
                     alt="Placeholder"
-                    className="object-cover w-full h-full rounded opacity-70 mt-4"
+                    className="object-cover w-full h-full opacity-70"
                   />
                 </div>
               )}
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

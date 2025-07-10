@@ -1,30 +1,46 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
+import signImage from "../../assets/images/signImage.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner, faSave } from "@fortawesome/free-solid-svg-icons";
-import { FaChevronDown } from "react-icons/fa"; // Pastikan FaChevronDown diimpor
+import { FaChevronDown } from "react-icons/fa";
 
 function EditMenusPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+
+  // --- Sidebar control states and functions ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
 
   const [form, setForm] = useState({
     name_menu: "",
     price: "",
     category: "",
-    image: null, // File objek untuk upload baru
+    image: null,
   });
-  const [previewImage, setPreviewImage] = useState(null); // URL untuk preview gambar baru (lokal)
-  const [oldImage, setOldImage] = useState(null); // URL gambar lama dari database (Cloudinary URL)
-  const [drinkType, setDrinkType] = useState(""); // Default kosong, bukan "Default"
-  const isDrinkCategory = !["Pastry", "Main Course", "Snacks"].includes(
-    form.category
-  ); // Definisikan di sini
+  const [previewImage, setPreviewImage] = useState(null);
+  const [oldImage, setOldImage] = useState(null);
+  const [drinkType, setDrinkType] = useState("Default");
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+
+  const isDrinkCategory = !["Pastry", "Main Course", "Snacks"].includes(
+    form.category
+  );
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -83,13 +99,12 @@ function EditMenusPage() {
         return;
       }
 
-      const data = await response.json(); // Backend sudah mengirim objek menu langsung
+      const data = await response.json();
 
       const category = data.category_menu || "";
       const name = data.name_menu || "";
       let detectedDrinkType = "";
 
-      // Logika untuk mendeteksi tipe minuman dari nama menu
       if (!["Pastry", "Main Course", "Snacks"].includes(category)) {
         const match = name.match(/^(Iced|Hot)\s+/i);
         if (match) {
@@ -101,12 +116,11 @@ function EditMenusPage() {
         name_menu: name.replace(/^(Iced|Hot)\s+/i, ""),
         price: data.price || "",
         category: category,
-        image: null, // Reset file input saat fetch
+        image: null,
       });
 
       setDrinkType(detectedDrinkType);
-      // Langsung gunakan URL dari database karena sudah URL Cloudinary penuh
-      setOldImage(data.image_menu); // Ini akan menjadi URL Cloudinary lengkap
+      setOldImage(data.image_menu);
     } catch (error) {
       console.error("Gagal fetch menu:", error);
       setAuthError(
@@ -135,16 +149,14 @@ function EditMenusPage() {
       const file = files[0];
       setForm({ ...form, image: file });
       if (file) {
-        setPreviewImage(URL.createObjectURL(file)); // Buat URL lokal untuk preview gambar baru
+        setPreviewImage(URL.createObjectURL(file));
       } else {
-        setPreviewImage(null); // Hapus preview jika file dibatalkan
+        setPreviewImage(null);
       }
-      setOldImage(null); // Hapus gambar lama dari tampilan preview jika ada gambar baru
+      setOldImage(null);
     } else {
-      // Reset drinkType jika kategori berubah menjadi kategori makanan
       if (name === "category" && !isDrinkCategory) {
-        // Periksa !isDrinkCategory karena isDrinkCategory adalah kebalikan isFoodCategory
-        setDrinkType(""); // Reset drinkType saat beralih ke kategori makanan
+        setDrinkType("");
       }
       setForm({ ...form, [name]: value });
     }
@@ -156,7 +168,6 @@ function EditMenusPage() {
     setSubmitLoading(true);
 
     let updatedName = form.name_menu;
-    // Hanya tambahkan prefix "Iced" atau "Hot" jika kategori adalah minuman DAN drinkType bukan kosong/Default
     if (isDrinkCategory && drinkType !== "" && drinkType !== "Default") {
       updatedName = `${drinkType} ${form.name_menu}`;
     }
@@ -166,9 +177,8 @@ function EditMenusPage() {
     formData.append("price", form.price);
     formData.append("category", form.category);
     if (form.image) {
-      formData.append("image", form.image); // Hanya tambahkan gambar jika ada yang baru dipilih
+      formData.append("image", form.image);
     }
-    // Jika tidak ada gambar baru, backend akan mempertahankan gambar lama karena newImageUrl akan null
 
     try {
       const token = localStorage.getItem("adminToken");
@@ -185,7 +195,6 @@ function EditMenusPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Menangani error spesifik dari backend (contoh: nama menu sudah ada)
         if (
           response.status === 409 &&
           errorData.message &&
@@ -212,11 +221,16 @@ function EditMenusPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Edit Menu</h1>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Edit Menu
+          </h1>
 
           {authError && (
             <div
@@ -230,44 +244,50 @@ function EditMenusPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="relative bg-white border rounded shadow-md flex w-full h-[700px] gap-12"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative"
             encType="multipart/form-data"
           >
-            <div className="flex-1 p-12 space-y-4 relative">
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Nama Menu</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Nama Menu
+                </label>
                 <input
                   name="name_menu"
                   type="text"
                   placeholder="Masukkan nama menu"
                   value={form.name_menu}
                   onChange={handleChange}
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Harga</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Harga
+                </label>
                 <input
                   name="price"
                   type="number"
                   placeholder="Masukkan harga menu"
                   value={form.price}
                   onChange={handleChange}
-                  className="px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Kategori</label>
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Kategori
+                </label>
                 <div className="relative">
                   <select
                     name="category"
                     value={form.category}
                     onChange={handleChange}
-                    className="appearance-none w-full px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="appearance-none w-full px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                     required
                   >
                     <option disabled value="">
@@ -289,17 +309,19 @@ function EditMenusPage() {
                 </div>
               </div>
 
-              {isDrinkCategory && ( // Tampilkan hanya jika ini kategori minuman
+              {isDrinkCategory && (
                 <div className="flex flex-col">
-                  <label className="text-lg font-bold mb-1">Tipe Minuman</label>
+                  <label className="text-sm md:text-lg font-bold mb-1">
+                    Tipe Minuman
+                  </label>
                   <div className="relative">
                     <select
                       name="drinkType"
                       value={drinkType}
                       onChange={(e) => setDrinkType(e.target.value)}
-                      className="appearance-none w-full px-4 py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="appearance-none w-full px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                     >
-                      <option value="">Default</option>
+                      <option value="Default">Default</option>
                       <option value="Iced">Iced</option>
                       <option value="Hot">Hot</option>
                     </select>
@@ -311,10 +333,16 @@ function EditMenusPage() {
               )}
 
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Upload Gambar
+                </label>
+                <label className="w-full px-4 py-2 md:py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500 text-sm md:text-base">
                   <span>
-                    {form.image ? form.image.name : "Pilih gambar..."}
+                    {form.image
+                      ? form.image.name
+                      : oldImage
+                      ? "Ganti gambar..."
+                      : "Pilih gambar..."}
                   </span>
                   <input
                     type="file"
@@ -326,12 +354,11 @@ function EditMenusPage() {
                 </label>
               </div>
 
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+              <div className="mt-8 md:mt-12 flex justify-center">
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -340,62 +367,61 @@ function EditMenusPage() {
                       className="text-lg"
                     />
                   ) : (
-                    <FontAwesomeIcon
-                      icon={faSave}
-                      className="group-hover:text-black text-lg"
-                    />
+                    <FontAwesomeIcon icon={faSave} className="text-lg" />
                   )}
-                  {submitLoading ? "Mengupdate..." : "Update Menu"}{" "}
+                  {submitLoading ? "Mengupdate..." : "Update Menu"}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center relative">
-              {previewImage ? ( // Tampilkan preview gambar baru jika ada
+            <div className="flex-1 flex items-center justify-center">
+              {previewImage ? (
                 <img
                   src={previewImage}
                   alt="Preview Gambar Baru"
-                  className="object-cover w-full h-full rounded"
+                  className="object-contain w-full h-auto max-h-full rounded"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src =
-                      "https://placehold.co/400x300/cccccc/000000?text=Error";
+                    e.target.src = { signImage };
                   }}
                 />
-              ) : oldImage ? ( // Tampilkan gambar lama jika tidak ada preview gambar baru
-                <div className="relative w-full h-full flex items-center justify-center">
+              ) : oldImage ? (
+                <div className="relative w-full h-full min-h-[150px] flex items-center justify-center border border-gray-300 rounded overflow-hidden">
                   <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
-                    Gambar lama, upload untuk mengubah menjadi gambar baru
+                    Gambar lama, upload untuk mengubah
                   </div>
                   <img
-                    src={oldImage} // Langsung menggunakan URL Cloudinary dari state
+                    src={oldImage}
                     alt="Gambar Lama"
-                    className="object-cover w-full h-full rounded opacity-70"
+                    className="object-cover w-full h-full opacity-70"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/400x300/cccccc/000000?text=Error";
+                      e.target.src = { signImage };
                     }}
                   />
                 </div>
               ) : (
-                // Jika tidak ada gambar baru dan tidak ada gambar lama
-                <div className="text-gray-600 font-semibold">
-                  Tidak ada gambar untuk ditampilkan
+                <div className="relative w-full h-full min-h-[150px] flex items-center justify-center border border-gray-300 rounded overflow-hidden">
+                  <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
+                    Tidak ada gambar untuk ditampilkan
+                  </div>
                   <img
-                    src="https://placehold.co/400x300/cccccc/000000?text=No+Image" // Placeholder jika tidak ada gambar
+                    src={signImage}
                     alt="Placeholder"
-                    className="object-cover w-full h-full rounded opacity-70 mt-4"
+                    className="object-cover w-full h-full opacity-70"
                   />
                 </div>
               )}
             </div>
           </form>
 
-          {/* Footer */}
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

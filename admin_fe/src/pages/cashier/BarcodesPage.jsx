@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarCashier from "../../components/SidebarCashier";
 import LogoImage from "../../assets/images/logo.webp";
@@ -12,29 +12,41 @@ import {
   faTrash,
   faQrcode,
   faRotate,
-  faSpinner, // Digunakan untuk loading
+  faSpinner,
   faInfoCircle,
   faCircleCheck,
   faCircleExclamation,
-  faTimesCircle, // Digunakan untuk error
+  faTimesCircle,
   faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 
 function BarcodesPage() {
   const [tables, setTables] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedTable, setSelectedTable] = useState(null);
   const [qrData, setQrData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false); // Loading untuk generate QR di modal
-  const [tableLoading, setTableLoading] = useState(true); // <--- State loading untuk data tabel utama
-  const [tableError, setTableError] = useState(null); // <--- State error untuk data tabel utama
+  const [loading, setLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [tableError, setTableError] = useState(null);
   const [isReusedToken, setIsReusedToken] = useState(null);
   const [isTokenExpired, setIsTokenExpired] = useState(false);
-  const TOKEN_EXPIRY_MINUTES = 20; // DIUBAH: Sekarang dalam menit
+  const TOKEN_EXPIRY_MINUTES = 20;
 
   const qrCodeRef = useRef();
   const [authError, setAuthError] = useState(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -146,7 +158,7 @@ function BarcodesPage() {
 
       if (res.ok && data.success) {
         const age =
-          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60); // Ubah ke menit
+          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60);
 
         if (data.reused) {
           if (age > TOKEN_EXPIRY_MINUTES) {
@@ -238,7 +250,7 @@ function BarcodesPage() {
 
       if (res.ok && data.success && data.qr_token) {
         const age =
-          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60); // Ubah ke menit
+          (Date.now() - new Date(data.qr_generated_at).getTime()) / (1000 * 60);
 
         if (age < TOKEN_EXPIRY_MINUTES) {
           setQrData(data.qr_token);
@@ -294,7 +306,7 @@ function BarcodesPage() {
         const bottomText2 = "jika token ditolak mohon hubungi kasir";
         const bottomText2Font = "16px Arial";
 
-        const bottomText3 = `Masa berlaku token ${TOKEN_EXPIRY_MINUTES} menit`; // Sudah dalam menit
+        const bottomText3 = `Masa berlaku token ${TOKEN_EXPIRY_MINUTES} menit`;
         const bottomText3Font = "14px Arial";
 
         ctx.font = topText1Font;
@@ -380,7 +392,6 @@ function BarcodesPage() {
     }
   };
 
-  // Open modal handler
   const openModal = async (table) => {
     setSelectedTable(table);
     setIsModalOpen(true);
@@ -390,7 +401,6 @@ function BarcodesPage() {
     await fetchExistingQrToken(table);
   };
 
-  // Close modal handler
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTable(null);
@@ -399,7 +409,6 @@ function BarcodesPage() {
     setIsTokenExpired(false);
   };
 
-  // Handle delete table
   const handleDeleteTable = async (id_table, table_number) => {
     const confirmDelete = window.confirm(
       `Apakah Anda yakin ingin menghapus meja ${table_number}? Aksi ini tidak dapat dibatalkan jika ada riwayat transaksi terkait.`
@@ -443,18 +452,21 @@ function BarcodesPage() {
     }
   };
 
-  // Base URL untuk QR Code (URL aplikasi frontend Anda)
   const appBaseUrl = "https://sacalunacoffee-menu.vercel.app";
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarCashier />
-        <div className="flex-1 p-16">
-          <h1 className="text-2xl font-bold mb-8">Generate Barcode</h1>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarCashier
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Generate Barcode
+          </h1>
 
-          {/* Bagian untuk menampilkan pesan error autentikasi */}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -465,39 +477,38 @@ function BarcodesPage() {
             </div>
           )}
 
-          {/* Table List Container */}
-          <div className="bg-white rounded shadow-xl overflow-hidden border border-gray-200 min-h-[400px] flex flex-col">
-            <div className="bg-white border rounded shadow-md w-full h-[700px] overflow-auto">
-              <table className="w-full table-fixed border-collapse text-sm">
-                <thead className="sticky top-0 z-10 bg-gray-200 text-center">
+          <div className="bg-white rounded shadow-xl overflow-hidden border border-black min-h-[400px] md:min-h-[500px] lg:min-h-[700px] flex flex-col">
+            <div className="w-full h-full overflow-auto">
+              {" "}
+              <table className="w-full table-auto border-collapse text-sm">
+                {" "}
+                <thead className="sticky top-0 bg-gray-200 text-center">
                   <tr>
-                    <th className="p-4 uppercase tracking-wider w-[10%]">
+                    <th className="p-2 md:p-4 uppercase tracking-wider w-[10%] text-xs md:text-sm">
                       No.
-                    </th>{" "}
-                    {/* Changed from ID to No. */}
-                    <th className="p-4 uppercase tracking-wider w-[30%]">
+                    </th>
+                    <th className="p-2 md:p-4 uppercase tracking-wider w-[30%] text-xs md:text-sm">
                       Table Number
                     </th>
-                    <th className="p-4 uppercase tracking-wider w-[35%]">
+                    <th className="p-2 md:p-4 uppercase tracking-wider w-[35%] text-xs md:text-sm">
                       QR Code
                     </th>
-                    <th className="p-4 uppercase tracking-wider w-[25%]">
+                    <th className="p-2 md:p-4 uppercase tracking-wider w-[25%] text-xs md:text-sm">
                       Action
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {/* Tampilkan loading atau error saat mengambil data */}
+                <tbody className="divide-y divide-gray-100 text-xs md:text-sm">
                   {tableLoading ? (
                     <tr>
                       <td
                         colSpan="4"
-                        className="text-center py-16 text-gray-500"
+                        className="text-center py-8 md:py-16 text-gray-500"
                       >
                         <FontAwesomeIcon
                           icon={faSpinner}
                           spin
-                          className="text-3xl text-yellow-500 mb-4"
+                          className="text-2xl md:text-3xl text-yellow-500 mb-4"
                         />
                         <p>Memuat data meja...</p>
                       </td>
@@ -506,11 +517,11 @@ function BarcodesPage() {
                     <tr>
                       <td
                         colSpan="4"
-                        className="text-center py-16 text-red-600"
+                        className="text-center py-8 md:py-16 text-red-600"
                       >
                         <FontAwesomeIcon
                           icon={faTimesCircle}
-                          className="text-3xl text-red-500 mb-4"
+                          className="text-2xl md:text-3xl text-red-500 mb-4"
                         />
                         <p>{tableError}</p>
                       </td>
@@ -519,11 +530,11 @@ function BarcodesPage() {
                     <tr>
                       <td
                         colSpan="4"
-                        className="text-center py-16 text-gray-500"
+                        className="text-center py-8 md:py-16 text-gray-500"
                       >
                         <FontAwesomeIcon
                           icon={faInfoCircle}
-                          className="text-3xl text-gray-400 mb-4"
+                          className="text-2xl md:text-3xl text-gray-400 mb-4"
                         />
                         <p>Belum ada data meja tersedia.</p>
                         <p className="mt-2">Klik "Tambah Meja" untuk mulai.</p>
@@ -533,35 +544,37 @@ function BarcodesPage() {
                     tables.map((table, index) => (
                       <tr
                         key={table.id_table}
-                        className="p-4 bg-white text-center hover:bg-gray-50 transition-colors duration-150"
+                        className="p-2 md:p-4 bg-white text-center hover:bg-gray-50 transition-colors duration-150"
                       >
-                        <td className="p-4">{index + 1}</td>{" "}
-                        {/* Displaying sequential number */}
-                        <td className="p-4">{table.table_number}</td>
-                        <td className="p-4">
+                        <td className="p-2 md:p-4">{index + 1}</td>
+                        <td className="p-2 md:p-4">{table.table_number}</td>
+                        <td className="p-2 md:p-4">
                           <button
                             onClick={() => openModal(table)}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 gap-2"
+                            className="inline-flex items-center justify-center px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 gap-1 md:gap-2 text-xs md:text-sm"
                           >
-                            <FontAwesomeIcon icon={faQrcode} />
+                            <FontAwesomeIcon
+                              icon={faQrcode}
+                              className="w-3 h-3 md:w-4 md:h-4"
+                            />
                             <span>Lihat QR Code</span>
                           </button>
                         </td>
-                        <td className="p-4">
-                          <div className="flex justify-center items-center gap-4">
+                        <td className="p-2 md:p-4">
+                          <div className="flex justify-center items-center gap-2 md:gap-4">
                             <button
                               onClick={() =>
                                 navigate(
                                   `/barcodeCashier/edit-table/${table.id_table}`
                                 )
                               }
-                              className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                              className="text-blue-600 hover:text-blue-800 p-1 md:p-2 rounded-full hover:bg-blue-50 transition-colors"
                               title="Edit Meja"
                               aria-label={`Edit meja ${table.table_number}`}
                             >
                               <FontAwesomeIcon
                                 icon={faEdit}
-                                className="w-5 h-5"
+                                className="w-4 h-4 md:w-5 md:h-5"
                               />
                             </button>
                             <button
@@ -571,13 +584,13 @@ function BarcodesPage() {
                                   table.table_number
                                 )
                               }
-                              className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                              className="text-red-600 hover:text-red-800 p-1 md:p-2 rounded-full hover:bg-red-50 transition-colors"
                               title="Hapus Meja"
                               aria-label={`Hapus meja ${table.table_number}`}
                             >
                               <FontAwesomeIcon
                                 icon={faTrash}
-                                className="w-5 h-5"
+                                className="w-4 h-4 md:w-5 md:h-5"
                               />
                             </button>
                           </div>
@@ -590,75 +603,83 @@ function BarcodesPage() {
             </div>
           </div>
 
-          {/* Add Table Button */}
           <button
             onClick={() => navigate("/barcodeCashier/add-table")}
-            className="w-auto mt-6 px-6 py-3 bg-black text-white rounded-lg font-bold text-lg shadow-md
-                  hover:bg-yellow-600 hover:text-black transition-colors duration-200 flex items-center justify-center gap-3"
+            className="w-full sm:w-auto mt-6 px-4 py-2 md:px-6 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-lg shadow-md
+                     hover:bg-yellow-500 hover:text-black transition-colors duration-200 flex items-center justify-center gap-2 md:gap-3"
           >
-            <FontAwesomeIcon icon={faCirclePlus} className="text-xl" />
+            <FontAwesomeIcon
+              icon={faCirclePlus}
+              className="text-base md:text-xl"
+            />
             <span>Tambah Meja Baru</span>
           </button>
 
-          {/* Note Section */}
-          <p className="pt-8 text-sm text-gray-600">
+          <p className="pt-4 md:pt-8 text-xs md:text-sm text-gray-600">
             * Klik "Lihat QR Code" untuk menampilkan atau membuat QR Code baru
             untuk meja.
           </p>
 
-          {/* Branding at bottom right */}
-          <div className="fixed bottom-4 right-4 z-10 flex items-center gap-2 text-sm font-semibold text-gray-600 bg-white px-4 py-2 rounded-lg shadow-lg">
-            <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
-            <span>Sacaluna Coffee</span>
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
+              <span>Sacaluna Coffee</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
       {isModalOpen && selectedTable && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
           onClick={closeModal}
         >
           <div
-            className="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full relative flex flex-col items-center text-center transform scale-105 animate-scale-in"
+            className="bg-white p-6 md:p-8 rounded-lg shadow-2xl max-w-xs sm:max-w-sm w-full relative flex flex-col items-center text-center transform scale-105 animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={closeModal}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 transition-colors"
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 transition-colors"
               aria-label="Tutup"
             >
-              <FontAwesomeIcon icon={faXmark} className="text-2xl" />
+              <FontAwesomeIcon icon={faXmark} className="text-xl md:text-2xl" />
             </button>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
               QR Code Meja {selectedTable?.table_number}
             </h2>
 
             {loading ? (
-              <div className="flex flex-col items-center py-10">
+              <div className="flex flex-col items-center py-6 md:py-10">
                 <FontAwesomeIcon
                   icon={faSpinner}
                   spin
-                  className="text-4xl text-yellow-500 mb-4"
+                  className="text-3xl md:text-4xl text-yellow-500 mb-4"
                 />
-                <p className="text-gray-600">Memuat QR Code...</p>
+                <p className="text-sm md:text-base text-gray-600">
+                  Memuat QR Code...
+                </p>
               </div>
             ) : qrData ? (
               <>
-                <div className="p-4 border-4 border-yellow-500 rounded-lg bg-white shadow-inner mb-6">
+                <div className="p-3 md:p-4 border-4 border-yellow-500 rounded-lg bg-white shadow-inner mb-4 md:mb-6">
                   <QRCode
                     value={`${appBaseUrl}/table/${selectedTable.table_number}/${qrData}`}
-                    size={200}
+                    size={160}
+                    viewBox={`0 0 160 160`}
                     ref={qrCodeRef}
                   />
                 </div>
 
                 <p
-                  className={`mt-1 text-sm font-semibold ${
+                  className={`mt-1 text-xs md:text-sm font-semibold ${
                     isReusedToken ? "text-green-600" : "text-yellow-600"
-                  } flex items-center gap-1.5`}
+                  } flex items-center justify-center gap-1.5`}
                 >
                   <FontAwesomeIcon
                     icon={isReusedToken ? faCircleCheck : faCircleExclamation}
@@ -667,18 +688,16 @@ function BarcodesPage() {
                     ? "Token ini masih berlaku. Tidak perlu regenerasi."
                     : "Token baru berhasil dibuat!"}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Masa berlaku QR Code: {TOKEN_EXPIRY_MINUTES} menit.{" "}
-                  {/* Sudah dalam menit */}
+                <p className="text-xs text-gray-500 mt-1 mb-4">
+                  Masa berlaku QR Code: {TOKEN_EXPIRY_MINUTES} menit.
                 </p>
 
-                <div className="flex flex-col gap-4 mt-6">
-                  {" "}
+                <div className="flex flex-col gap-3 w-full">
                   <button
                     onClick={() => generateQRToken(selectedTable)}
                     disabled={loading}
-                    className="px-6 py-3 bg-yellow-500 text-black rounded-lg font-semibold text-lg shadow-md
-                                   hover:bg-yellow-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="px-4 py-2 md:px-6 md:py-3 bg-yellow-500 text-black rounded-lg font-semibold text-sm md:text-base shadow-md
+                      hover:bg-yellow-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <FontAwesomeIcon icon={faSpinner} spin />
@@ -691,8 +710,8 @@ function BarcodesPage() {
                   </button>
                   <button
                     onClick={downloadQRCode}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold text-lg shadow-md
-                                   hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="px-4 py-2 md:px-6 md:py-3 bg-green-600 text-white rounded-lg font-semibold text-sm md:text-base shadow-md
+                      hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <FontAwesomeIcon icon={faDownload} />
                     <span>Download QR</span>
@@ -700,10 +719,9 @@ function BarcodesPage() {
                 </div>
               </>
             ) : (
-              // No QR data or token expired
-              <div className="flex flex-col items-center py-10">
+              <div className="flex flex-col items-center py-6 md:py-10 w-full">
                 {isTokenExpired && (
-                  <p className="text-red-600 font-semibold mb-4 text-center flex items-center gap-2">
+                  <p className="text-red-600 font-semibold mb-4 text-center flex items-center justify-center gap-2 text-sm md:text-base">
                     <FontAwesomeIcon icon={faCircleExclamation} /> Token sudah
                     berakhir.
                   </p>
@@ -711,8 +729,8 @@ function BarcodesPage() {
                 <button
                   onClick={() => generateQRToken(selectedTable)}
                   disabled={loading}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg shadow-md
-                                   hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm md:text-base shadow-md
+                    hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <FontAwesomeIcon icon={faSpinner} spin />

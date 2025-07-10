@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import { FaEdit } from "react-icons/fa";
@@ -14,6 +14,21 @@ import {
 
 function MenusPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- Sidebar control states and functions ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
+
   const [menus, setMenus] = useState([]);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
@@ -21,7 +36,6 @@ function MenusPage() {
   const [authError, setAuthError] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [dataError, setDataError] = useState(null); // <-- dataError dideklarasikan di sini
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -33,7 +47,7 @@ function MenusPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (MenusPage):",
+        "Detail Error Autentikasi (HistorysPage):",
         errorData,
         "Status HTTP:",
         res.status
@@ -63,7 +77,6 @@ function MenusPage() {
   );
 
   const fetchMenus = useCallback(async () => {
-    setDataError(null); // Reset dataError di awal fetch
     setAuthError(null);
     const token = localStorage.getItem("adminToken");
 
@@ -83,25 +96,16 @@ function MenusPage() {
       }
 
       const data = await res.json();
-      if (data && Array.isArray(data.data)) {
-        setMenus(data.data);
-      } else {
-        // Jika struktur data tidak sesuai, set error data
-        setDataError("Struktur data menu tidak valid.");
-        setMenus([]);
-      }
+      setMenus(data.data);
+      setAuthError(null);
     } catch (error) {
       console.error(
         "Gagal memuat menu (kesalahan jaringan atau tak tertangani):",
         error
       );
-      // Set error data untuk masalah jaringan atau error tak tertangani lainnya
-      setDataError(
+      setAuthError(
         "Gagal memuat daftar menu. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
-    } finally {
-      setInitialLoading(false);
-      setSearchLoading(false);
     }
   }, [handleAuthenticationError]);
 
@@ -111,37 +115,44 @@ function MenusPage() {
 
     if (!token || user?.role !== "Admin") {
       if (!token) {
-        console.warn("Anda tidak memiliki akses. Silakan login kembali.");
+        alert("Anda tidak memiliki akses. Silakan login kembali.");
       }
       localStorage.clear();
       navigate("/");
       return;
     }
 
-    fetchMenus();
+    const loadMenusData = async () => {
+      setInitialLoading(true);
+      await fetchMenus();
+      setInitialLoading(false);
+    };
+
+    loadMenusData();
   }, [navigate, fetchMenus]);
-
-  useEffect(() => {
-    if (!initialLoading) {
-      const delayDebounceFn = setTimeout(() => {
-        setSearchLoading(true);
-        fetchMenus();
-      }, 500);
-
-      return () => clearTimeout(delayDebounceFn);
-    }
-  }, [searchTerm, fetchMenus, initialLoading]);
 
   const filteredMenus = menus.filter(
     (menu) =>
       menu.name_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
       menu.category_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (menu.price &&
-        menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase()))
+      menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const openImageModal = (imageUrl) => {
-    setSelectedImageUrl(imageUrl);
+  useEffect(() => {
+    if (!initialLoading) {
+      setSearchLoading(true);
+      const delayDebounceFn = setTimeout(() => {
+        setSearchLoading(false);
+      }, 500);
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [searchTerm, initialLoading]);
+
+  const openImageModal = (imageName) => {
+    setSelectedImageUrl(
+      `https://sacalunacoffee-production.up.railway.app${imageName}`
+    );
     setShowImageModal(true);
   };
 
@@ -152,25 +163,29 @@ function MenusPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">Menu Management</h1>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Cari Menu:</label>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
+            <h1 className="text-xl md:text-2xl font-bold">Menu Management</h1>
+            <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-[calc(50%-0.5rem)] max-w-xs">
+              <label className="text-sm font-medium whitespace-nowrap">
+                Cari Menu:
+              </label>
               <input
                 type="text"
                 placeholder="Search menu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="bg-transparent focus:outline-none focus:ring-0 h-full w-full text-sm flex-1"
               />
             </div>
           </div>
 
-          {/* Menampilkan pesan error autentikasi (authError) */}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -181,27 +196,26 @@ function MenusPage() {
             </div>
           )}
 
-          <div className="bg-white border rounded shadow-md w-full h-[700px] overflow-auto">
-            <table className="w-full border-collapse">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gray-200 text-left">
-                  <th className="p-3 w-[5%] text-center">No</th>
-                  <th className="p-3 w-[25%]">Name Menu</th>
-                  <th className="p-3 w-[15%]">Category</th>
-                  <th className="p-3 w-[15%]">Price</th>
-                  <th className="p-3 w-[20%] text-center">Image</th>
-                  <th className="p-3 w-[20%] text-center">Action</th>
+          <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
+            <table className="w-full table-auto border-collapse text-sm">
+              <thead className="sticky top-0 bg-gray-200 text-left">
+                <tr>
+                  <th className="p-2 md:p-3 w-[5%] text-center">No</th>
+                  <th className="p-2 md:p-3 w-[30%]">Name Menu</th>
+                  <th className="p-2 md:p-3 w-[15%] ">Category</th>
+                  <th className="p-2 md:p-3 w-[15%]">Price</th>
+                  <th className="p-2 md:p-3 w-[15%] ">Image</th>
+                  <th className="p-2 md:p-3 w-[15%] text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
-                {/* Tampilkan loading atau error data umum */}
-                {(initialLoading || searchLoading) && menus.length === 0 ? (
+              <tbody className="text-xs md:text-sm">
+                {initialLoading || searchLoading ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
                         icon={faSpinner}
                         spin
-                        className="text-3xl text-yellow-500 mb-4"
+                        className="text-2xl md:text-3xl text-yellow-500 mb-4"
                       />
                       <p>
                         {initialLoading
@@ -210,14 +224,14 @@ function MenusPage() {
                       </p>
                     </td>
                   </tr>
-                ) : dataError ? ( // <-- Gunakan dataError di sini
+                ) : authError && !initialLoading && !searchLoading ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
-                        className="text-3xl text-red-500 mb-4"
+                        className="text-2xl md:text-3xl text-red-500 mb-4"
                       />
-                      <p>{dataError}</p> {/* <-- Tampilkan pesan dataError */}
+                      <p>{authError}</p>
                     </td>
                   </tr>
                 ) : filteredMenus.length === 0 ? (
@@ -229,33 +243,29 @@ function MenusPage() {
                 ) : (
                   filteredMenus.map((menu, index) => (
                     <tr key={menu.id_menu} className="hover:bg-gray-100">
-                      <td className="p-3 text-center">{index + 1}</td>
-                      <td className="p-3">{menu.name_menu}</td>
-                      <td className="p-3">{menu.category_menu}</td>
-                      <td className="p-3">Rp {menu.price.toLocaleString()}</td>
-                      <td className="p-3 text-center">
-                        {menu.image_menu ? (
-                          <button
-                            onClick={() => openImageModal(menu.image_menu)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            Review Image
-                          </button>
-                        ) : (
-                          <span className="text-gray-500">No Image</span>
-                        )}
+                      <td className="p-2 md:p-3 text-center">{index + 1}</td>
+                      <td className="p-2 md:p-3">{menu.name_menu}</td>
+                      <td className="p-2 md:p-3 ">{menu.category_menu}</td>
+                      <td className="p-2 md:p-3">
+                        Rp {menu.price.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-3">
-                        <div className="flex gap-4 justify-center items-center">
+                      <td className="p-2 md:p-3 ">
+                        <button
+                          onClick={() => openImageModal(menu.image_menu)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          Review Image
+                        </button>
+                      </td>
+                      <td className="p-2 md:p-3">
+                        <div className="flex gap-2 md:gap-4 justify-center">
                           <button
                             onClick={() =>
                               navigate(`/menus/edit-menu/${menu.id_menu}`)
                             }
-                            className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                            title="Edit Menu"
-                            aria-label={`Edit menu ${menu.name_menu}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm"
                           >
-                            <FaEdit className="w-5 h-5" />
+                            <FaEdit className="w-4 h-4 md:w-5 md:h-5" />
                           </button>
                         </div>
                       </td>
@@ -266,20 +276,21 @@ function MenusPage() {
             </table>
           </div>
 
-          <div>
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
             <button
               onClick={() => navigate("/menus/add-menu")}
-              className="w-auto mt-6 px-6 py-3 bg-black text-white rounded-lg font-bold text-lg shadow-md
-                  hover:bg-yellow-600 hover:text-black transition-colors duration-200 flex items-center justify-center gap-3"
+              className="w-full sm:w-auto px-4 py-2 md:px-6 md:py-2 bg-black hover:bg-yellow-500 text-white hover:text-black rounded-lg font-bold transition duration-200 h-11 flex items-center justify-center gap-2 text-sm md:text-base"
             >
-              <FontAwesomeIcon icon={faCirclePlus} className="text-xl" />
-              <span>Add Menu</span>
+              <FontAwesomeIcon icon={faCirclePlus} className="text-lg" />
+              Add Menu
             </button>
-          </div>
 
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>
@@ -288,23 +299,23 @@ function MenusPage() {
 
       {showImageModal && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50"
-          onClick={closeImageModal}
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(false)}
         >
           <div
-            className="bg-white p-8 rounded-lg shadow-lg max-w-lg w-full relative"
+            className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={closeImageModal}
-              className="absolute top-3 right-4 text-gray-600 hover:text-black text-xl font-bold"
+              className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl font-bold"
             >
-              <FontAwesomeIcon icon={faXmark} className="text-2xl" />
+              <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
             <img
               src={selectedImageUrl}
-              alt="Menu Full"
-              className="w-full h-auto object-contain rounded max-h-[80vh]"
+              alt="Menu"
+              className="w-full h-auto object-contain rounded"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src =

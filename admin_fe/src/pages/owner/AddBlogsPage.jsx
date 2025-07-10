@@ -1,21 +1,33 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import LogoImage from "../../assets/images/logo.webp";
+import signImage from "../../assets/images/signImage.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCirclePlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import oldImage from "../../assets/images/signImage.webp";
 
 function AddBlogsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [form, setForm] = useState({
     title: "",
     content: "",
     image: null,
   });
   const [previewImage, setPreviewImage] = useState(null);
-
   const [authError, setAuthError] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -135,11 +147,17 @@ function AddBlogsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16 bg-white">
-          <h1 className="text-2xl font-bold mb-8">Add New Blog</h1>{" "}
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">
+            Add New Blog
+          </h1>
+
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -149,39 +167,47 @@ function AddBlogsPage() {
               <span className="block sm:inline ml-2">{authError}</span>
             </div>
           )}
+
           <form
             onSubmit={handleSubmit}
-            className="bg-white border rounded shadow-md flex w-full h-[700px] gap-12 relative"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative"
             encType="multipart/form-data"
           >
-            <div className="flex-1 p-12 space-y-6 relative">
-              {" "}
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Title</label>{" "}
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Title
+                </label>
                 <input
                   name="title"
                   type="text"
                   placeholder="Masukkan judul blog"
                   value={form.title}
                   onChange={handleChange}
-                  className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
                   required
                 />
               </div>
+
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Content</label>{" "}
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Content
+                </label>
                 <textarea
                   name="content"
                   placeholder="Tulis konten blog di sini..."
                   value={form.content}
                   onChange={handleChange}
-                  className="px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 min-h-[200px] resize-none"
+                  className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base min-h-[150px] md:min-h-[200px] resize-y"
                   required
                 />
               </div>
+
               <div className="flex flex-col">
-                <label className="text-lg font-bold mb-1">Upload Gambar</label>
-                <label className="w-full px-4 py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500">
+                <label className="text-sm md:text-lg font-bold mb-1">
+                  Upload Gambar
+                </label>
+                <label className="w-full px-4 py-2 md:py-4 border rounded cursor-pointer text-gray-600 focus-within:ring-2 focus-within:ring-yellow-500 text-sm md:text-base">
                   <span>
                     {form.image ? form.image.name : "Pilih gambar..."}
                   </span>
@@ -191,15 +217,16 @@ function AddBlogsPage() {
                     accept="image/*"
                     onChange={handleChange}
                     className="hidden"
+                    required
                   />
                 </label>
               </div>
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-12">
+
+              <div className="mt-8 md:mt-12 flex justify-center">
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="w-60 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4
-                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-60 text-base md:text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-3 md:py-4 rounded-lg font-bold transition duration-200 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitLoading ? (
                     <FontAwesomeIcon
@@ -208,51 +235,42 @@ function AddBlogsPage() {
                       className="text-lg"
                     />
                   ) : (
-                    <FontAwesomeIcon
-                      icon={faCirclePlus}
-                      className="group-hover:text-black text-lg"
-                    />
+                    <FontAwesomeIcon icon={faCirclePlus} className="text-lg" />
                   )}
                   {submitLoading ? "Menambahkan..." : "Add Blog"}{" "}
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center relative">
+            <div className="flex-1 flex items-center justify-center">
               {previewImage ? (
                 <img
                   src={previewImage}
-                  alt="Preview"
-                  className="object-cover w-full h-full rounded"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src =
-                      "https://placehold.co/400x300/cccccc/000000?text=Error";
-                  }}
+                  alt="Preview Gambar Baru"
+                  className="object-contain w-full h-auto max-h-full rounded"
                 />
               ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full min-h-[150px] md:min-h-[200px] flex items-center justify-center border border-gray-300 rounded overflow-hidden">
                   <div className="absolute z-10 text-center w-full text-gray-600 font-semibold bg-white/80 px-4 py-4">
                     Gambar preview akan muncul di sini setelah upload
                   </div>
-
                   <img
-                    src={oldImage}
+                    src={signImage}
                     alt="Placeholder"
-                    className="object-cover w-full h-full rounded opacity-70"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/400x300/cccccc/000000?text=Error";
-                    }}
+                    className="object-cover w-full h-full opacity-70"
                   />
                 </div>
               )}
             </div>
           </form>
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

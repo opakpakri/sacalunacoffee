@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarCashier from "../../components/SidebarCashier";
 import LogoImage from "../../assets/images/logo.webp";
@@ -12,7 +12,6 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Helper function for status classes
 const getStatusClass = (status) => {
   switch (status) {
     case "success":
@@ -25,7 +24,7 @@ const getStatusClass = (status) => {
     case "canceled":
       return "bg-red-200 text-red-800";
     case "processing":
-      return "bg-orange-200 text-orange-800";
+      return "bg-blue-200 text-blue-800";
     default:
       return "bg-gray-100 text-gray-700";
   }
@@ -33,23 +32,33 @@ const getStatusClass = (status) => {
 
 function TransactionsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authError, setAuthError] = useState(null);
 
-  // State for Payment Status Modal
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-  // New States for Amount Paid Edit Modal
   const [isAmountEditModalOpen, setIsAmountEditModalOpen] = useState(false);
   const [editAmountTransaction, setEditAmountTransaction] = useState(null);
   const [tempEditedAmount, setTempEditedAmount] = useState("");
   const [amountEditError, setAmountEditError] = useState(null);
 
-  // States for Order Detail Modal
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [currentDetailTransaction, setCurrentDetailTransaction] =
     useState(null);
@@ -101,7 +110,7 @@ function TransactionsPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const url = `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/today?searchTerm=${searchTerm}`;
+      const url = `https://sacalunacoffee-menu.vercel.app/api/transactions-cashier/today?searchTerm=${searchTerm}`;
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -119,8 +128,7 @@ function TransactionsPage() {
       console.error("Error fetching transactions:", err);
       setError("Gagal memuat data transaksi. Coba lagi nanti: " + err.message);
     } finally {
-      // This block is left empty because loading state for initial fetch
-      // and search debounce are managed by their respective useEffects.
+      //
     }
   }, [searchTerm, handleAuthenticationError]);
 
@@ -137,16 +145,14 @@ function TransactionsPage() {
     }
 
     const loadInitialData = async () => {
-      setLoading(true); // Activate initial loading
+      setLoading(true);
       await fetchTransactions();
-      setLoading(false); // Deactivate initial loading after fetch
+      setLoading(false);
     };
     loadInitialData();
   }, [navigate, fetchTransactions]);
 
-  // Effect for search (with Debounce)
   useEffect(() => {
-    // Only activate debounce after initial loading is complete
     if (!loading) {
       const delayDebounceFn = setTimeout(async () => {
         await fetchTransactions();
@@ -208,7 +214,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/payments/${editAmountTransaction.id_payment}/status`,
+        `https://sacalunacoffee-menu.vercel.app/api/payments/${editAmountTransaction.id_payment}/status`,
         {
           method: "PUT",
           headers: {
@@ -216,7 +222,7 @@ function TransactionsPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            new_status: editAmountTransaction.payment_status, // Maintain current status
+            new_status: editAmountTransaction.payment_status,
             amount_paid: newAmount,
           }),
         }
@@ -252,13 +258,12 @@ function TransactionsPage() {
       return;
     }
 
-    // Validation for 'success' status
     if (newStatus === "success") {
       const transactionAmountPaid = parseFloat(selectedTransaction.amount_paid);
       const transactionOrderAmount = parseFloat(
         selectedTransaction.order_amount
       );
-      const tolerance = 0.01; // Small tolerance for floating point comparisons
+      const tolerance = 0.01;
 
       if (selectedTransaction.payment_method === "pay_at_cashier") {
         if (
@@ -299,10 +304,10 @@ function TransactionsPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const amountPaidToSend = selectedTransaction.amount_paid; // Use existing amount_paid for API call
+      const amountPaidToSend = selectedTransaction.amount_paid;
 
       const updatePaymentResponse = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/payments/${id_payment}/status`,
+        `https://sacalunacoffee-menu.vercel.app/api/payments/${id_payment}/status`,
         {
           method: "PUT",
           headers: {
@@ -321,23 +326,22 @@ function TransactionsPage() {
         return;
       }
 
-      // Logic to update order_status based on payment_status change
       let orderStatusToUpdate = null;
       if (
         newStatus === "success" &&
-        selectedTransaction.order_status === "waiting" // Only change order status if it's currently 'waiting'
+        selectedTransaction.order_status === "waiting"
       ) {
-        orderStatusToUpdate = "pending"; // Change order status to pending if payment is successful and order was waiting
+        orderStatusToUpdate = "pending";
       } else if (newStatus === "failed") {
-        orderStatusToUpdate = "canceled"; // Change order status to canceled if payment fails
+        orderStatusToUpdate = "canceled";
       }
 
       if (
         orderStatusToUpdate &&
-        selectedTransaction.order_status !== orderStatusToUpdate // Prevent unnecessary updates
+        selectedTransaction.order_status !== orderStatusToUpdate
       ) {
         const updateOrderResponse = await fetch(
-          `https://sacalunacoffee-production.up.railway.app/api/orders/${id_order}/status`,
+          `https://sacalunacoffee-menu.vercel.app/api/orders/${id_order}/status`,
           {
             method: "PUT",
             headers: {
@@ -363,7 +367,7 @@ function TransactionsPage() {
       }
 
       closeStatusModal();
-      fetchTransactions(); // Re-fetch all transactions to update the table
+      fetchTransactions();
     } catch (err) {
       console.error("Error updating payment status:", err);
       alert("Error: " + err.message);
@@ -373,7 +377,6 @@ function TransactionsPage() {
   const isSuccessButtonDisabled = () => {
     if (!selectedTransaction) return true;
 
-    // Disable if already success, canceled, or completed
     if (
       selectedTransaction.payment_status === "success" ||
       selectedTransaction.order_status === "canceled" ||
@@ -395,13 +398,12 @@ function TransactionsPage() {
       selectedTransaction.payment_method === "online_payment" &&
       selectedTransaction.payment_type === "qris"
     ) {
-      // For QRIS, amount paid must exactly match order amount (within tolerance)
       return (
         isNaN(transactionAmountPaid) ||
         Math.abs(transactionAmountPaid - transactionOrderAmount) > tolerance
       );
     }
-    return false; // Should not reach here if all cases handled above
+    return false;
   };
 
   const openDetailModal = async (transaction) => {
@@ -413,7 +415,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${transaction.id_order}/items`,
+        `https://sacalunacoffee-menu.vercel.app/api/transactions-cashier/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -450,24 +452,34 @@ function TransactionsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarCashier />
-        <div className="flex-1 p-16">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">Today Transaction</h1>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Cari Data:</label>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex flex-1 relative">
+        {" "}
+        <SidebarCashier
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          {" "}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
+            {" "}
+            <h1 className="text-xl md:text-2xl font-bold">
+              Today Transaction
+            </h1>{" "}
+            <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-auto max-w-xs">
+              {" "}
+              <label className="text-sm font-medium whitespace-nowrap">
+                Cari Data:
+              </label>
               <input
                 type="text"
                 placeholder="Search transaction..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="bg-transparent focus:outline-none focus:ring-0 h-full w-full text-sm flex-1"
               />
             </div>
           </div>
-
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
@@ -477,37 +489,46 @@ function TransactionsPage() {
               <span className="block sm:inline ml-2">{authError}</span>
             </div>
           )}
-
-          <div className="bg-white border rounded shadow-md w-full h-[700px] overflow-auto">
-            <table className="w-full table-fixed border-collapse text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-200 text-left">
+          <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
+            {" "}
+            <table className="w-full table-auto border-collapse text-xs md:text-sm">
+              {" "}
+              <thead className="sticky top-0 bg-gray-200 text-left">
                 <tr>
-                  <th className="p-3 w-[5%]">ID</th>
-                  <th className="p-3 w-[8%]">No. Meja</th>
-                  <th className="p-3 w-[12%]">Nama Customer</th>
-                  <th className="p-3 w-[8%]">No. Telp</th>
-                  <th className="p-3 w-[10%] text-right">Jumlah</th>
-                  <th className="p-3 w-[10%] text-right">Jumlah Bayar</th>
-                  <th className="p-3 w-[6%]">Metode Bayar</th>{" "}
-                  {/* Reverted width */}
-                  <th className="p-3 w-[6%]">Tipe Bayar</th>{" "}
-                  {/* Reverted width */}
-                  <th className="p-3 w-[10%]">Status Bayar</th>
-                  <th className="p-3 w-[10%]">Status Order</th>
-                  <th className="p-3 w-[10%]">Waktu Order</th>
-                  <th className="p-3 w-[7%]">Detail</th>
-                  <th className="p-3 w-[7%]">Invoice</th>
+                  <th className="p-2 md:p-3 w-[5%]">ID</th>
+                  <th className="p-2 md:p-3 w-[8%]">No. Meja</th>
+                  <th className="p-2 md:p-3 w-[12%]">Nama Customer</th>
+                  <th className="p-2 md:p-3 w-[8%] hidden md:table-cell">
+                    No. Telp
+                  </th>{" "}
+                  <th className="p-2 md:p-3 w-[10%] text-right">Jumlah</th>
+                  <th className="p-2 md:p-3 w-[10%] text-right">
+                    Jumlah Bayar
+                  </th>
+                  <th className="p-2 md:p-3 w-[6%] hidden sm:table-cell">
+                    Metode Bayar
+                  </th>{" "}
+                  <th className="p-2 md:p-3 w-[6%] hidden lg:table-cell">
+                    Tipe Bayar
+                  </th>{" "}
+                  <th className="p-2 md:p-3 w-[10%]">Status Bayar</th>
+                  <th className="p-2 md:p-3 w-[10%]">Status Order</th>
+                  <th className="p-2 md:p-3 w-[10%] hidden md:table-cell">
+                    Waktu Order
+                  </th>{" "}
+                  <th className="p-2 md:p-3 w-[7%]">Detail</th>
+                  <th className="p-2 md:p-3 w-[7%]">Invoice</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
-                {/* Display loading or error when fetching data */}
+              <tbody className="text-xs md:text-sm">
+                {" "}
                 {loading ? (
                   <tr>
                     <td colSpan="13" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
                         icon={faSpinner}
                         spin
-                        className="text-3xl text-yellow-500 mb-4"
+                        className="text-2xl md:text-3xl text-yellow-500 mb-4"
                       />
                       <p>Memuat transaksi...</p>
                     </td>
@@ -517,7 +538,7 @@ function TransactionsPage() {
                     <td colSpan="13" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
-                        className="text-3xl text-red-500 mb-4"
+                        className="text-2xl md:text-3xl text-red-500 mb-4"
                       />
                       <p>{error}</p>
                     </td>
@@ -532,21 +553,23 @@ function TransactionsPage() {
                   transactions.map((transaction) => (
                     <tr
                       key={transaction.id_order}
-                      className="hover:bg-gray-100 "
+                      className="hover:bg-gray-100"
                     >
-                      <td className="p-3 ">{transaction.id_order}</td>
-                      <td className="p-3 ">{transaction.table_number}</td>
-                      <td className="p-3 truncate">
+                      <td className="p-2 md:p-3">{transaction.id_order}</td>
+                      <td className="p-2 md:p-3">{transaction.table_number}</td>
+                      <td className="p-2 md:p-3 truncate">
                         {transaction.name_customer}
                       </td>
-                      <td className="p-3 ">{transaction.phone || "-"}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-2 md:p-3 hidden md:table-cell">
+                        {transaction.phone || "-"}
+                      </td>{" "}
+                      <td className="p-2 md:p-3 text-right">
                         Rp {transaction.order_amount.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-3 relative">
+                      <td className="p-2 md:p-3 relative">
                         <span
                           onClick={() => openAmountEditModal(transaction)}
-                          className={`cursor-pointer block text-right hover:bg-gray-200 p-1 rounded 
+                          className={`cursor-pointer block text-right hover:bg-gray-200 p-1 rounded
                             ${
                               transaction.payment_method === "pay_at_cashier" &&
                               transaction.payment_status !== "success" &&
@@ -579,18 +602,20 @@ function TransactionsPage() {
                             )}
                         </span>
                       </td>
-                      <td className="p-3 ">
+                      <td className="p-2 md:p-3 hidden sm:table-cell">
+                        {" "}
                         {transaction.payment_method === "online_payment"
                           ? "Online"
                           : "Cashier"}
                       </td>
-                      <td className="p-3 ">
+                      <td className="p-2 md:p-3 hidden lg:table-cell">
+                        {" "}
                         {transaction.payment_type || "-"}
                       </td>
-                      <td className="p-3">
+                      <td className="p-2 md:p-3">
                         <button
                           onClick={() => openStatusModal(transaction)}
-                          className={`block w-full py-1 px-2 rounded-md ${getStatusClass(
+                          className={`block w-full py-1 px-2 rounded-md text-xs ${getStatusClass(
                             transaction.payment_status
                           )} ${
                             transaction.payment_status === "success" ||
@@ -608,16 +633,17 @@ function TransactionsPage() {
                           {transaction.payment_status || "N/A"}
                         </button>
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-2 md:p-3 text-center">
                         <span
-                          className={`w-full inline-block py-1 px-2 rounded-md ${getStatusClass(
+                          className={`w-full inline-block py-1 px-2 rounded-md text-xs ${getStatusClass(
                             transaction.order_status
                           )}`}
                         >
                           {transaction.order_status}
                         </span>
                       </td>
-                      <td className="p-3 ">
+                      <td className="p-2 md:p-3 hidden md:table-cell">
+                        {" "}
                         {new Date(transaction.order_time).toLocaleString(
                           "id-ID",
                           {
@@ -630,18 +656,18 @@ function TransactionsPage() {
                           }
                         )}
                       </td>
-                      <td className="p-3 ">
+                      <td className="p-2 md:p-3">
                         <button
                           onClick={() => openDetailModal(transaction)}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline text-xs"
                         >
                           Detail
                         </button>
                       </td>
-                      <td className="p-3">
+                      <td className="p-2 md:p-3">
                         <button
                           onClick={() => handlePrintInvoice(transaction)}
-                          className="text-green-600 hover:underline"
+                          className="text-green-600 hover:underline text-xs"
                         >
                           Invoice
                         </button>
@@ -652,24 +678,26 @@ function TransactionsPage() {
               </tbody>
             </table>
           </div>
-
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Payment Status Modal */}
       {isStatusModalOpen && selectedTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeStatusModal}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-xl w-96 relative"
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -679,34 +707,34 @@ function TransactionsPage() {
               <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center">
               Ubah Status Pembayaran
             </h2>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Order ID:{" "}
               <span className="font-semibold">
                 {selectedTransaction.id_order}
               </span>
             </p>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Nomor Meja:{" "}
               <span className="font-semibold">
                 {selectedTransaction.table_number}
               </span>
             </p>
-            <p className="text-md mb-1">
+            <p className="text-sm md:text-base mb-1">
               Atas Nama:{" "}
               <span className="font-semibold">
                 {selectedTransaction.name_customer || "-"}
               </span>
             </p>
-            <p className="text-md mb-4">
+            <p className="text-sm md:text-base mb-4">
               No. Telp:{" "}
               <span className="font-semibold">
                 {selectedTransaction.phone || "-"}
               </span>
             </p>
-            <p className="text-md mb-4">
+            <p className="text-sm md:text-base mb-4">
               Metode Pembayaran:{" "}
               <span className="font-semibold">
                 {selectedTransaction.payment_method === "online_payment"
@@ -717,13 +745,13 @@ function TransactionsPage() {
                   : ""}
               </span>
             </p>
-            <p className="text-md mb-4">
+            <p className="text-sm md:text-base mb-4">
               Jumlah Tagihan:{" "}
               <span className="font-semibold">
                 Rp {selectedTransaction.order_amount.toLocaleString("id-ID")}
               </span>
             </p>
-            <p className="text-md mb-4">
+            <p className="text-sm md:text-base mb-4">
               Jumlah Bayar:{" "}
               <span className="font-semibold">
                 Rp{" "}
@@ -734,9 +762,11 @@ function TransactionsPage() {
             </p>
 
             <div className="mb-6 text-center">
-              <p className="text-gray-600 mb-2">Status saat ini:</p>
+              <p className="text-gray-600 mb-2 text-sm md:text-base">
+                Status saat ini:
+              </p>
               <span
-                className={`inline-block py-2 px-4 rounded-full text-lg font-bold ${getStatusClass(
+                className={`inline-block py-2 px-4 rounded-full text-md md:text-lg font-bold ${getStatusClass(
                   selectedTransaction.payment_status
                 )}`}
               >
@@ -744,9 +774,7 @@ function TransactionsPage() {
               </span>
             </div>
 
-            {/* Buttons for status change */}
             <div className="flex flex-col gap-3">
-              {/* 'Sukses' button */}
               {selectedTransaction.payment_status !== "success" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -758,7 +786,7 @@ function TransactionsPage() {
                         selectedTransaction.id_order
                       )
                     }
-                    className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
+                    className={`py-2 px-4 rounded-lg font-bold text-sm md:text-base ${getStatusClass(
                       "success"
                     )} ${
                       isSuccessButtonDisabled()
@@ -772,7 +800,6 @@ function TransactionsPage() {
                   </button>
                 )}
 
-              {/* 'Batal' button */}
               {selectedTransaction.payment_status !== "success" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -784,7 +811,7 @@ function TransactionsPage() {
                         selectedTransaction.id_order
                       )
                     }
-                    className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
+                    className={`py-2 px-4 rounded-lg font-bold text-sm md:text-base ${getStatusClass(
                       "failed"
                     )} hover:opacity-80 transition-opacity`}
                     disabled={
@@ -798,7 +825,6 @@ function TransactionsPage() {
                   </button>
                 )}
 
-              {/* "Pending" button */}
               {selectedTransaction.payment_status !== "pending" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -810,7 +836,7 @@ function TransactionsPage() {
                         selectedTransaction.id_order
                       )
                     }
-                    className={`py-3 px-4 rounded-lg font-bold ${getStatusClass(
+                    className={`py-2 px-4 rounded-lg font-bold text-sm md:text-base ${getStatusClass(
                       "pending"
                     )} hover:opacity-80 transition-opacity`}
                     disabled={
@@ -827,14 +853,13 @@ function TransactionsPage() {
         </div>
       )}
 
-      {/* --- Amount Paid Edit Modal --- */}
       {isAmountEditModalOpen && editAmountTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeAmountEditModal}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-xl w-96 relative"
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -844,16 +869,16 @@ function TransactionsPage() {
               <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center">
               Edit Jumlah Bayar
             </h2>
-            <p className="text-md mb-2">
+            <p className="text-sm md:text-base mb-2">
               Order ID:{" "}
               <span className="font-semibold">
                 {editAmountTransaction.id_order}
               </span>
             </p>
-            <p className="text-md mb-2">
+            <p className="text-sm md:text-base mb-2">
               Jumlah Tagihan:{" "}
               <span className="font-semibold">
                 Rp {editAmountTransaction.order_amount.toLocaleString("id-ID")}
@@ -862,7 +887,7 @@ function TransactionsPage() {
             <div className="mb-4">
               <label
                 htmlFor="amount_paid_input"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm md:text-base font-medium text-gray-700 mb-1"
               >
                 Nominal yang dibayar:
               </label>
@@ -871,7 +896,7 @@ function TransactionsPage() {
                 type="number"
                 value={tempEditedAmount}
                 onChange={handleTempEditedAmountChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-right"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-right text-sm md:text-base"
                 min="0"
                 step="any"
                 autoFocus
@@ -883,13 +908,13 @@ function TransactionsPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeAmountEditModal}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors text-sm md:text-base"
               >
                 Batal
               </button>
               <button
                 onClick={handleUpdateAmountPaid}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="px-3 py-1 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-base"
               >
                 Simpan
               </button>
@@ -898,14 +923,13 @@ function TransactionsPage() {
         </div>
       )}
 
-      {/* Order Detail Modal */}
       {isDetailModalOpen && currentDetailTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeDetailModal}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-xl w-[600px] relative max-h-[80vh] overflow-y-auto"
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm md:max-w-md lg:max-w-lg relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -915,29 +939,29 @@ function TransactionsPage() {
               <FontAwesomeIcon icon={faXmark} className="text-xl" />
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center">
               Detail Pesanan
             </h2>
-            <div className="mb-4 text-left">
-              <p className="text-md mb-1">
+            <div className="mb-4 text-left text-sm md:text-base">
+              <p className="mb-1">
                 Order ID:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.id_order}
                 </span>
               </p>
-              <p className="text-md mb-1">
+              <p className="mb-1">
                 Nomor Meja:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.table_number}
                 </span>
               </p>
-              <p className="text-md mb-1">
+              <p className="mb-1">
                 Nama Customer:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.name_customer || "-"}
                 </span>
               </p>
-              <p className="text-md mb-4">
+              <p className="mb-4">
                 No. Telp:{" "}
                 <span className="font-semibold">
                   {currentDetailTransaction.phone || "-"}
@@ -946,28 +970,32 @@ function TransactionsPage() {
             </div>
 
             {detailModalLoading ? (
-              <p className="text-center text-gray-500">Memuat detail...</p>
+              <p className="text-center text-gray-500 text-sm md:text-base">
+                Memuat detail...
+              </p>
             ) : detailModalError ? (
-              <p className="text-center text-red-600">{detailModalError}</p>
+              <p className="text-center text-red-600 text-sm md:text-base">
+                {detailModalError}
+              </p>
             ) : selectedOrderItems.length === 0 ? (
-              <p className="text-center text-gray-500">
+              <p className="text-center text-gray-500 text-sm md:text-base">
                 Tidak ada item dalam pesanan ini.
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200">
+                <table className="min-w-full bg-white border border-gray-200 text-xs md:text-sm">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="py-2 px-3 text-left text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-left font-semibold text-gray-600">
                         Nama Barang
                       </th>
-                      <th className="py-2 px-3 text-center text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-center font-semibold text-gray-600">
                         Jumlah
                       </th>
-                      <th className="py-2 px-3 text-right text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-right font-semibold text-gray-600">
                         Harga Satuan
                       </th>
-                      <th className="py-2 px-3 text-right text-sm font-semibold text-gray-600">
+                      <th className="py-2 px-2 md:px-3 text-right font-semibold text-gray-600">
                         Subtotal
                       </th>
                     </tr>
@@ -978,16 +1006,16 @@ function TransactionsPage() {
                         key={index}
                         className="border-t border-gray-200 hover:bg-gray-50"
                       >
-                        <td className="py-2 px-3 text-left">
+                        <td className="py-2 px-2 md:px-3 text-left">
                           {item.menu_name || `ID: ${item.id_menu}`}
                         </td>
-                        <td className="py-2 px-3 text-center">
+                        <td className="py-2 px-2 md:px-3 text-center">
                           {item.quantity}
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-2 md:px-3 text-right">
                           Rp {item.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-2 md:px-3 text-right">
                           Rp{" "}
                           {(item.quantity * item.price).toLocaleString("id-ID")}
                         </td>

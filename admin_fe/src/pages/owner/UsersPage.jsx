@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
 import { FaEdit, FaTrash } from "react-icons/fa";
@@ -7,20 +7,35 @@ import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCirclePlus,
-  faSpinner, // <--- Pastikan faSpinner diimpor
-  faTimesCircle, // <--- Pastikan faTimesCircle diimpor
+  faSpinner,
+  faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
 function UsersPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- Sidebar control states and functions ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    // Close sidebar on route change (for mobile)
+    if (isSidebarOpen && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
+
   const [users, setUsers] = useState([]);
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const [searchTerm, setSearchTerm] = useState("");
   const [authError, setAuthError] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false); // State untuk loading pencarian
-  const [initialLoading, setInitialLoading] = useState(true); // State untuk loading awal
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -31,7 +46,7 @@ function UsersPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi:",
+        "Detail Error Autentikasi (HistorysPage):",
         errorData,
         "Status HTTP:",
         res.status
@@ -60,19 +75,13 @@ function UsersPage() {
     [navigate]
   );
 
-  // Bungkus fetchUsers dengan useCallback
   const fetchUsers = useCallback(async () => {
-    // setSearchLoading(true); // Ini akan diatur oleh useEffect debounce
-    // setAuthError(null); // Ini akan direset di sini
+    setAuthError(null);
     const token = localStorage.getItem("adminToken");
-    console.log(
-      "Mengambil pengguna dengan token:",
-      token ? "Token ada" : "Token tidak ada"
-    );
 
     try {
       const res = await fetch(
-        "https://sacalunacoffee-production.up.railway.app/api/users",
+        `https://sacalunacoffee-production.up.railway.app/api/users`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -99,7 +108,6 @@ function UsersPage() {
     }
   }, [handleAuthenticationError]);
 
-  // Effect untuk loading awal
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const user = JSON.parse(localStorage.getItem("user"));
@@ -114,27 +122,13 @@ function UsersPage() {
     }
 
     const loadUsers = async () => {
-      setInitialLoading(true); // Aktifkan loading awal
+      setInitialLoading(true);
       await fetchUsers();
-      setInitialLoading(false); // Matikan loading awal setelah fetch
+      setInitialLoading(false);
     };
 
     loadUsers();
   }, [navigate, fetchUsers]);
-
-  // Effect untuk pencarian (dengan Debounce)
-  useEffect(() => {
-    // Hanya aktifkan debounce setelah loading awal selesai
-    if (!initialLoading) {
-      const delayDebounceFn = setTimeout(async () => {
-        setSearchLoading(true); // Aktifkan loading pencarian
-        await fetchUsers(); // Panggil ulang fetchUsers untuk pencarian
-        setSearchLoading(false); // Matikan loading pencarian
-      }, 500); // Debounce 500ms
-
-      return () => clearTimeout(delayDebounceFn);
-    }
-  }, [searchTerm, fetchUsers, initialLoading]); // searchTerm, fetchUsers, dan initialLoading sebagai dependency
 
   const filteredUsers = users.filter(
     (user) =>
@@ -142,6 +136,17 @@ function UsersPage() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  useEffect(() => {
+    if (!initialLoading) {
+      setSearchLoading(true);
+      const delayDebounceFn = setTimeout(() => {
+        setSearchLoading(false);
+      }, 500);
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [searchTerm, initialLoading]);
 
   const handleDelete = async (id, name) => {
     if (currentUser?.id_user === id) {
@@ -182,20 +187,27 @@ function UsersPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-1">
-        <SidebarAdmin />
-        <div className="flex-1 p-16 ">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">User Management</h1>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Cari User:</label>
+      <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+
+      <div className="flex flex-1 relative">
+        <SidebarAdmin
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
+
+        <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
+            <h1 className="text-xl md:text-2xl font-bold">User Management</h1>
+            <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-[calc(50%-0.5rem)] max-w-xs">
+              <label className="text-sm font-medium whitespace-nowrap">
+                Cari User:
+              </label>
               <input
                 type="text"
                 placeholder="Cari user..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="bg-transparent focus:outline-none focus:ring-0 h-full w-full text-sm flex-1"
               />
             </div>
           </div>
@@ -210,26 +222,25 @@ function UsersPage() {
             </div>
           )}
 
-          <div className="bg-white border rounded shadow-md w-full h-[700px] overflow-auto">
-            <table className="w-full border-collapse">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gray-200 text-left">
-                  <th className="p-3 w-[5%] text-center">No</th>
-                  <th className="p-3 w-[35%]">Username</th>
-                  <th className="p-3 w-[35%]">Email</th>
-                  <th className="p-3 w-[12.5%]">Role</th>
-                  <th className="p-3 w-[12.5%]">Action</th>
+          <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
+            <table className="w-full table-auto border-collapse text-sm">
+              <thead className="sticky top-0 bg-gray-200 text-left">
+                <tr>
+                  <th className="p-2 md:p-3 w-[5%] text-center">No</th>
+                  <th className="p-2 md:p-3 w-[30%]">Username</th>
+                  <th className="p-2 md:p-3 w-[30%] ">Email</th>
+                  <th className="p-2 md:p-3 w-[15%]">Role</th>
+                  <th className="p-2 md:p-3 w-[15%]">Action</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
-                {/* Tampilkan loading awal atau loading pencarian */}
+              <tbody className="text-xs md:text-sm">
                 {initialLoading || searchLoading ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
                       <FontAwesomeIcon
                         icon={faSpinner}
                         spin
-                        className="text-3xl text-yellow-500 mb-4"
+                        className="text-2xl md:text-3xl text-yellow-500 mb-4"
                       />
                       <p>
                         {initialLoading
@@ -238,31 +249,31 @@ function UsersPage() {
                       </p>
                     </td>
                   </tr>
-                ) : authError && !initialLoading && !searchLoading ? ( // Tampilkan error umum jika ada dan bukan karena loading
+                ) : authError && !initialLoading && !searchLoading ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-red-600">
                       <FontAwesomeIcon
                         icon={faTimesCircle}
-                        className="text-3xl text-red-500 mb-4"
+                        className="text-2xl md:text-3xl text-red-500 mb-4"
                       />
                       <p>{authError}</p>
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-gray-500">
+                    <td colSpan="6" className="text-center py-8 text-gray-500">
                       Data tidak ditemukan.
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((user, index) => (
                     <tr key={user.id_user} className="hover:bg-gray-100">
-                      <td className="p-3 text-center">{index + 1}</td>
-                      <td className="p-3 ">{user.name_user}</td>
-                      <td className="p-3 ">{user.email}</td>
-                      <td className="p-3 ">{user.role}</td>
-                      <td className="p-3">
-                        <div className="flex  gap-8">
+                      <td className="p-2 md:p-3 text-center">{index + 1}</td>
+                      <td className="p-2 md:p-3">{user.name_user}</td>
+                      <td className="p-2 md:p-3 ">{user.email}</td>
+                      <td className="p-2 md:p-3">{user.role}</td>
+                      <td className="p-2 md:p-3">
+                        <div className="flex gap-2 md:gap-4 ">
                           <button
                             onClick={() => {
                               if (user.id_user === currentUser?.id_user) {
@@ -273,17 +284,17 @@ function UsersPage() {
                               }
                               navigate(`/users/edit-user/${user.id_user}`);
                             }}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
                           >
-                            <FaEdit className="w-5 h-5" />
+                            <FaEdit className="w-4 h-4 md:w-5 md:h-5" />
                           </button>
                           <button
                             onClick={() =>
                               handleDelete(user.id_user, user.name_user)
                             }
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-600 hover:text-red-800 text-sm md:text-base"
                           >
-                            <FaTrash className="w-5 h-5" />
+                            <FaTrash className="w-4 h-4 md:w-5 md:h-5" />
                           </button>
                         </div>
                       </td>
@@ -293,21 +304,20 @@ function UsersPage() {
               </tbody>
             </table>
           </div>
-          <div>
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
             <button
               onClick={() => navigate("/users/add-user")}
-              className="w-50 text-lg bg-black hover:bg-yellow-500 text-white hover:text-black py-2 rounded-lg font-bold transition duration-200 mt-4 flex items-center justify-center gap-4"
+              className="w-full sm:w-auto px-4 py-2 md:px-6 md:py-2 bg-black hover:bg-yellow-500 text-white hover:text-black rounded-lg font-bold transition duration-200 h-11 flex items-center justify-center gap-2 text-sm md:text-base"
             >
-              <FontAwesomeIcon
-                icon={faCirclePlus}
-                className="group-hover:text-black text-lg"
-              />
+              <FontAwesomeIcon icon={faCirclePlus} className="text-lg" />
               Add User
             </button>
-          </div>
-          <div className="fixed bottom-4 right-4 pb-4 pr-12">
-            <div className="flex items-center gap-2 text-sm  font-semibold">
-              <img src={LogoImage} alt="Sacaluna" className="h-6 w-6" />
+            <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
+              <img
+                src={LogoImage}
+                alt="Sacaluna"
+                className="h-5 w-5 md:h-6 md:w-6"
+              />
               <span>Sacaluna Coffee</span>
             </div>
           </div>

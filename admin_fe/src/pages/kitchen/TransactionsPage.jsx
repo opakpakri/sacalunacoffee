@@ -102,7 +102,7 @@ function TransactionsPage() {
     setAuthError(null);
     try {
       const token = localStorage.getItem("adminToken");
-      const url = `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/today?searchTerm=${searchTerm}`;
+      const url = `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/today?searchTerm=${searchTerm}`;
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -155,7 +155,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/${transaction.id_order}/items`,
+        `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -195,7 +195,7 @@ function TransactionsPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-menu.vercel.app/api/transactions-kitchen/${id_order}/status`,
+        `https://sacalunacoffee-production.up.railway.app/api/transactions-kitchen/${id_order}/status`,
         {
           method: "PUT",
           headers: {

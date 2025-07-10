@@ -78,7 +78,7 @@ function InvoiceOrdersPage() {
       try {
         const token = localStorage.getItem("adminToken");
         const response = await fetch(
-          `https://sacalunacoffee-menu.vercel.app/api/transactions-cashier/${trans.id_order}/items`,
+          `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${trans.id_order}/items`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

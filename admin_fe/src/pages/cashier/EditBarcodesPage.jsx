@@ -72,7 +72,7 @@ function EditBarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-menu.vercel.app/api/tables/${id}`,
+        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -124,7 +124,7 @@ function EditBarcodesPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-menu.vercel.app/api/tables/${id}`,
+        `https://sacalunacoffee-production.up.railway.app/api/tables/${id}`,
         {
           method: "PUT",
           headers: {

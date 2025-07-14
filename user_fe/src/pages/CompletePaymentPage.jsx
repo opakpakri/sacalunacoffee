@@ -293,8 +293,7 @@ function CompletePaymentPage() {
               href="https://sacalunacoffee.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md
-                         hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105"
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors duration-300"
             >
               <FontAwesomeIcon icon={faGlobe} className="text-xl" />
               <span>sacalunacoffee.vercel.app</span>

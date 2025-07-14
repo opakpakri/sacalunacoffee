@@ -318,7 +318,7 @@ function AddUsersPage() {
               </div>
             </div>
 
-            <div className="flex-1 hidden lg:flex items-center justify-center">
+            <div className="hidden lg:flex-1 lg:flex items-center justify-center">
               <img
                 src={signImage}
                 alt="User Illustration"

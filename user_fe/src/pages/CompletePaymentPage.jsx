@@ -29,11 +29,12 @@ function CompletePaymentPage() {
   const [amountDue, setAmountDue] = useState(0);
   const [fetchDetailsLoading, setFetchDetailsLoading] = useState(true);
   const [fetchDetailsError, setFetchDetailsError] = useState(null);
+  // NEW STATE: untuk menampilkan pesan sukses setelah konfirmasi pembayaran
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Redirect if not coming from checkout
   useEffect(() => {
     if (!location.state || location.state.fromCheckout === false) {
-      // Ensure correct template literal syntax here
       navigate("/", { replace: true });
     }
   }, [location, navigate]);
@@ -78,7 +79,6 @@ function CompletePaymentPage() {
     sessionStorage.removeItem("paymentReminderToken");
 
     if (isOnlinePayment) {
-      // Ensure correct template literal syntax here
       sessionStorage.setItem("showPaymentReminder", "true");
       sessionStorage.setItem("paymentReminderToken", token);
 
@@ -86,7 +86,6 @@ function CompletePaymentPage() {
         replace: true,
       });
     } else {
-      // Ensure correct template literal syntax here
       navigate(`/table/${tableNumber}/${token}`, { replace: true });
     }
   };
@@ -165,11 +164,13 @@ function CompletePaymentPage() {
       sessionStorage.removeItem("showPaymentReminder");
       sessionStorage.removeItem("paymentReminderToken");
 
-      alert(
-        "Pembayaran berhasil dikonfirmasi dan pesanan Anda sedang diproses!"
-      );
-      // Ensure correct template literal syntax here
-      navigate(`/table/${tableNumber}/${token}`, { replace: true });
+      // OLD: alert("Pembayaran berhasil dikonfirmasi dan pesanan Anda sedang diproses!");
+      // NEW: Set state to show success message instead of alert
+      setShowSuccessMessage(true);
+
+      // OLD: navigate(`/table/${tableNumber}/${token}`, { replace: true });
+      // NEW: Don't navigate immediately, show success message first.
+      // Navigation will happen when user clicks "Kembali ke Menu" from success message.
     } catch (err) {
       console.error("Gagal menyelesaikan pembayaran:", err);
       setError(err.message);
@@ -209,7 +210,6 @@ function CompletePaymentPage() {
       sessionStorage.removeItem("paymentReminderToken");
 
       alert("Pembayaran dibatalkan. Pesanan Anda akan dibatalkan.");
-      // Ensure correct template literal syntax here
       navigate(`/table/${tableNumber}/${token}`, { replace: true });
     } catch (err) {
       console.error("Gagal membatalkan pembayaran:", err);
@@ -257,6 +257,36 @@ function CompletePaymentPage() {
             className="w-full max-w-xs bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md hover:bg-blue-700 transition-colors"
           >
             Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // NEW: Render success message after payment confirmation
+  if (showSuccessMessage) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-green-100 to-white p-6 font-sans">
+        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-lg w-full text-center transform transition-all duration-300 hover:scale-[1.01] animate-fade-in">
+          <FontAwesomeIcon
+            icon={faCheckCircle}
+            className="text-green-500 text-6xl mb-6 animate-bounce-in"
+          />
+          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4 leading-tight">
+            Pembayaran dengan QRIS Anda Berhasil!
+          </h1>
+          <p className="text-lg text-gray-700 mb-8">
+            Pesanan akan segera kami proses, mohon ditunggu. Terima Kasih!
+          </p>
+          <button
+            onClick={() =>
+              navigate(`/table/${tableNumber}/${token}`, { replace: true })
+            }
+            className="w-full max-w-xs bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
+                       hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+            <span>Kembali ke Menu</span>
           </button>
         </div>
       </div>
@@ -378,7 +408,7 @@ function CompletePaymentPage() {
                     value={nominalInput}
                     onChange={(e) => setNominalInput(e.target.value)}
                     className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-lg text-center
-                                       focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
+                                     focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200"
                     min="0"
                     step="any"
                   />

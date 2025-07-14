@@ -322,7 +322,7 @@ function AddUsersPage() {
               <img
                 src={signImage}
                 alt="User Illustration"
-                className="object-contain w-full h-auto max-h-full"
+                className="object-cover w-full h-full "
               />
             </div>
           </form>

@@ -27,7 +27,7 @@ const getStatusClass = (status) => {
       return "bg-orange-200 text-orange-800";
     default:
       return "bg-gray-100 text-gray-700";
-  }
+  } //
 };
 
 function TransactionsPage() {

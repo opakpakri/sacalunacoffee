@@ -24,7 +24,7 @@ const getStatusClass = (status) => {
     case "canceled":
       return "bg-red-200 text-red-800";
     case "processing":
-      return "bg-blue-200 text-blue-800";
+      return "bg-orange-200 text-orange-800";
     default:
       return "bg-gray-100 text-gray-700";
   }

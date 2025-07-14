@@ -9,7 +9,8 @@ import {
   faSpinner,
   faArrowLeft,
   faMoneyBillTransfer, // For nominal input section
-  faMoneyBill1Wave, // New icon for amount due
+  faMoneyBill1Wave,
+  faGlobe, // New icon for amount due
 } from "@fortawesome/free-solid-svg-icons";
 
 function CompletePaymentPage() {
@@ -279,14 +280,27 @@ function CompletePaymentPage() {
             Pesanan akan segera kami proses, mohon ditunggu. Terima Kasih!
           </p>
           <button
-            onClick={() =>
-              navigate(`/table/${tableNumber}/${token}`, { replace: true })
-            }
+            onClick={() => navigate(`/table/${tableNumber}/${token}`)}
             className="w-full max-w-xs bg-green-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
                        hover:bg-green-700 transition-colors duration-300 transform hover:scale-105"
           >
             <span>Oke!</span>
           </button>
+          {/* Bagian baru untuk link website */}
+          <div className="flex flex-col items-center gap-2 mt-4">
+            <p className="text-lg text-gray-700">Kunjungi website kami:</p>
+            <a
+              href="https://sacalunacoffee.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md
+                         hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105"
+            >
+              <FontAwesomeIcon icon={faGlobe} className="text-xl" />
+              <span>sacalunacoffee.vercel.app</span>
+            </a>
+          </div>
+
           <div className="mt-8 pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-500">
               Sacaluna Coffee | Terima Kasih atas kunjungan Anda!

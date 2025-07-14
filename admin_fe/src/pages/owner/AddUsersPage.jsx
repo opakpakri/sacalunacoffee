@@ -181,9 +181,9 @@ function AddUsersPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative p-4 md:p-8"
+            className="bg-white border rounded shadow-md flex flex-col lg:flex-row w-full h-auto min-h-[60vh] lg:h-[700px] gap-4 md:gap-12 relative "
           >
-            <div className="flex-1 flex flex-col space-y-4 justify-start">
+            <div className="flex-1 flex flex-col space-y-4 justify-start p-4 md:p-8">
               <div className="flex flex-col">
                 <label className="text-sm md:text-lg font-bold mb-1">
                   Username

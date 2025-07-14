@@ -287,6 +287,11 @@ function CompletePaymentPage() {
           >
             <span>Oke!</span>
           </button>
+          <div className="mt-8 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Sacaluna Coffee | Terima Kasih atas kunjungan Anda!
+            </p>
+          </div>
         </div>
       </div>
     );

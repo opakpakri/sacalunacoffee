@@ -443,12 +443,11 @@ function CompletePaymentPage() {
             Pesanan akan segera kami proses, mohon ditunggu. Terima Kasih!
           </p>
 
-          {/* Tombol Download Invoice - hanya tampil jika ada data transaksi */}
           {transactionData && (
             <button
               onClick={handleGeneratePdf}
-              className="w-full max-w-xs bg-purple-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
-                         hover:bg-purple-700 transition-colors duration-300 transform hover:scale-105 mb-4 flex items-center justify-center gap-2"
+              className="w-full max-w-xs bg-black text-white py-3 rounded-lg font-semibold text-lg shadow-md
+                         hover:bg-yellow-500 hover:text-black transition-colors duration-300 transform hover:scale-105 mb-4 flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faDownload} className="mr-2" />
               <span>Download Invoice</span>
@@ -459,23 +458,20 @@ function CompletePaymentPage() {
             onClick={() =>
               navigate(`/table/${tableNumber}/${token}`, { replace: true })
             }
-            className="w-full max-w-xs bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
-                       hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+            className="w-full max-w-xs bg-green-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
+                       hover:bg-green-700 transition-colors duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
-            <span>Kembali ke Menu</span>
+            <span>Oke!</span>
           </button>
 
-          {/* Hidden Invoice Content for PDF generation */}
-          {/* Ini akan di render di DOM tapi tidak terlihat, kemudian ditangkap oleh html2canvas */}
           <div
             ref={invoiceRef}
-            className="absolute top-[-9999px] left-[-9999px] w-[210mm] p-6 bg-white text-black" // Pastikan ukuran A4 dan warna dasar
+            className="absolute top-[-9999px] left-[-9999px] w-[210mm] p-6 bg-white text-black"
             style={{
-              fontSize: "12px", // Ukuran font dasar untuk PDF
+              fontSize: "12px",
               lineHeight: "1.5",
               color: "#000",
-              // Penting: Pastikan display none agar tidak terlihat, tapi bisa di-patch to static/block saat generate PDF
               display: "none",
               visibility: "hidden",
               position: "absolute",

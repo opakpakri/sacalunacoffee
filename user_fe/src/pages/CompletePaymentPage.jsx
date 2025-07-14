@@ -273,7 +273,7 @@ function CompletePaymentPage() {
             className="text-green-500 text-6xl mb-6 animate-bounce-in"
           />
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4 leading-tight">
-            Pembayaran dengan QRIS Anda Berhasil!
+            Pembayaran QRIS Anda Berhasil!
           </h1>
           <p className="text-lg text-gray-700 mb-8">
             Pesanan akan segera kami proses, mohon ditunggu. Terima Kasih!
@@ -282,11 +282,10 @@ function CompletePaymentPage() {
             onClick={() =>
               navigate(`/table/${tableNumber}/${token}`, { replace: true })
             }
-            className="w-full max-w-xs bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
-                       hover:bg-blue-700 transition-colors duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+            className="w-full max-w-xs bg-green-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md
+                       hover:bg-green-700 transition-colors duration-300 transform hover:scale-105"
           >
-            <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
-            <span>Kembali ke Menu</span>
+            <span>Oke!</span>
           </button>
         </div>
       </div>

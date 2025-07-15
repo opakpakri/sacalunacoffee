@@ -28,8 +28,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (e.g., uploaded images)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// // Serve static files (e.g., uploaded images)
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/login", authRoutes);

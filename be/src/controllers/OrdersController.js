@@ -1,5 +1,26 @@
 const db = require("../config/db");
 
+function getJakartaDateTime() {
+  const now = new Date();
+  const options = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Jakarta",
+  };
+  const jakartaTimeString = new Intl.DateTimeFormat("en-CA", options).format(
+    now
+  );
+  return jakartaTimeString.replace(
+    /(\d{4})-(\d{2})-(\d{2}),? (\d{2}):(\d{2}):(\d{2})/,
+    "$1-$2-$3 $4:$5:$6"
+  );
+}
+
 exports.checkout = async (req, res) => {
   const conn = await db.getConnection();
   await conn.beginTransaction();
@@ -11,7 +32,6 @@ exports.checkout = async (req, res) => {
       table_number,
       payment_method,
       payment_type,
-      order_time,
       items,
       amount,
     } = req.body;
@@ -42,8 +62,8 @@ exports.checkout = async (req, res) => {
     }
 
     const id_table = tableRows[0].id_table;
+    const currentOrderTime = getJakartaDateTime();
 
-    // Insert into orders - Default status is 'waiting'
     const [orderResult] = await conn.query(
       `INSERT INTO orders (id_table, name_customer, phone, table_number, payment_method, status, order_time)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -54,7 +74,7 @@ exports.checkout = async (req, res) => {
         table_number,
         payment_method || "pay_at_cashier",
         "waiting",
-        order_time,
+        currentOrderTime,
       ]
     );
 
@@ -75,17 +95,12 @@ exports.checkout = async (req, res) => {
       );
     }
 
-    const payment_time = new Date().toISOString();
+    const currentPaymentTime = getJakartaDateTime();
 
-    // Determine initial amount_paid based on payment_type
     let initial_amount_paid = null;
     if (payment_type === "cashier") {
-      // For cashier payments, amount_paid is the total amount (assuming full payment at cashier)
-      // Or you might want to keep it NULL if the cashier will input it later.
-      // Given your request "set menjadi null bila menggunakan metode kasir", we set it to null here.
       initial_amount_paid = null;
     } else {
-      // For QRIS or other online methods, amount_paid is initially null and updated later
       initial_amount_paid = null;
     }
 
@@ -96,10 +111,10 @@ exports.checkout = async (req, res) => {
         id_order,
         id_table,
         amount,
-        initial_amount_paid, // Insert the initial amount_paid here
-        "pending", // Payment status remains pending at checkout
+        initial_amount_paid,
+        "pending",
         payment_type || "cashier",
-        payment_time,
+        currentPaymentTime,
       ]
     );
 
@@ -114,7 +129,6 @@ exports.checkout = async (req, res) => {
   }
 };
 
-// ... (existing updateOrderStatus function)
 exports.updateOrderStatus = async (req, res) => {
   const { id_order } = req.params;
   const { new_status } = req.body;
@@ -126,7 +140,7 @@ exports.updateOrderStatus = async (req, res) => {
   }
 
   const validOrderStatuses = [
-    "waiting", // Pastikan 'waiting' ada di sini
+    "waiting",
     "pending",
     "processing",
     "completed",

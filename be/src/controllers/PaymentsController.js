@@ -1,27 +1,6 @@
 // src/controllers/PaymentsController.js
 const db = require("../config/db");
 
-function getJakartaDateTime() {
-  const now = new Date();
-  const options = {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Jakarta",
-  };
-  const jakartaTimeString = new Intl.DateTimeFormat("en-CA", options).format(
-    now
-  );
-  return jakartaTimeString.replace(
-    /(\d{4})-(\d{2})-(\d{2}),? (\d{2}):(\d{2}):(\d{2})/,
-    "$1-$2-$3 $4:$5:$6"
-  );
-}
-
 class PaymentsController {
   static async markPaymentSuccess(req, res) {
     const { tableNumber, token, amountPaid } = req.body;
@@ -45,9 +24,6 @@ class PaymentsController {
       }
 
       const { id_payment, id_order, amount, payment_type } = payments[0];
-
-      // Ambil waktu Jakarta saat ini
-      const currentJakartaTime = getJakartaDateTime();
 
       if (payment_type === "qris") {
         if (amountPaid !== null) {
@@ -74,22 +50,15 @@ class PaymentsController {
 
       await conn.query(
         `UPDATE payments
-                 SET payment_status = ?, payment_time = ?, amount_paid = ?
-                 WHERE id_payment = ?`,
-        ["success", currentJakartaTime, amountPaid, id_payment]
-      );
-
-      await conn.query(
-        `UPDATE orders
-                 SET status = 'processing'
-                 WHERE id_order = ?`,
-        [id_order]
+                SET payment_status = 'pending', payment_time = NOW(), amount_paid = ?
+                WHERE id_payment = ?`,
+        [amountPaid, id_payment]
       );
 
       await conn.commit();
       return res.status(200).json({
         message:
-          "Pembayaran QRIS berhasil dikonfirmasi. Pesanan akan segera diproses.",
+          "Nominal pembayaran QRIS berhasil dicatat. Menunggu konfirmasi kasir.",
       });
     } catch (error) {
       await conn.rollback();
@@ -125,12 +94,9 @@ class PaymentsController {
 
       const { id_payment, id_order } = rows[0];
 
-      // Ambil waktu Jakarta saat ini
-      const currentJakartaTime = getJakartaDateTime();
-
       await conn.query(
-        `UPDATE payments SET payment_status = 'failed', payment_time = ? WHERE id_payment = ?`,
-        [currentJakartaTime, id_payment]
+        `UPDATE payments SET payment_status = 'failed', payment_time = NOW() WHERE id_payment = ?`,
+        [id_payment]
       );
 
       await conn.query(
@@ -155,19 +121,15 @@ class PaymentsController {
     const conn = await db.getConnection();
     await conn.beginTransaction();
     try {
-      const currentJakartaTime = getJakartaDateTime();
-
       const [expiredPayments] = await conn.query(
-        `SELECT id_payment FROM payments WHERE payment_status = 'pending' AND payment_time < ? - INTERVAL 10 MINUTE`,
-        [currentJakartaTime]
+        `SELECT id_payment FROM payments WHERE payment_status = 'pending' AND payment_time < NOW() - INTERVAL 10 MINUTE`
       );
 
       if (expiredPayments.length > 0) {
         for (const payment of expiredPayments) {
-          const updateTime = getJakartaDateTime();
           await conn.query(
-            `UPDATE payments SET payment_status = 'failed', payment_time = ? WHERE id_payment = ?`,
-            [updateTime, payment.id_payment]
+            `UPDATE payments SET payment_status = 'failed', payment_time = NOW() WHERE id_payment = ?`,
+            [payment.id_payment]
           );
         }
       }
@@ -195,11 +157,7 @@ class PaymentsController {
 
     try {
       const [payments] = await db.query(
-        `SELECT p.id_payment, p.id_order, p.amount, p.amount_paid, p.payment_status, p.payment_type, 
-                o.table_number, o.name_customer, o.phone, o.order_time, p.payment_time,
-                (SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT('id_menu', oi.id_menu, 'quantity', oi.quantity, 'price', oi.price, 'menu_name', m.name_menu)
-                ) FROM order_items oi JOIN menus m ON oi.id_menu = m.id_menu WHERE oi.id_order = p.id_order) AS order_items
+        `SELECT p.id_payment, p.id_order, p.amount, p.amount_paid, p.payment_status, p.payment_type, o.table_number, o.name_customer
                 FROM payments p
                 JOIN orders o ON p.id_order = o.id_order
                 JOIN \`tables\` t ON o.id_table = t.id_table
@@ -213,13 +171,6 @@ class PaymentsController {
         return res.status(404).json({
           message: "No pending payment found for this table and token.",
         });
-      }
-
-      if (
-        payments[0].order_items &&
-        typeof payments[0].order_items === "string"
-      ) {
-        payments[0].order_items = JSON.parse(payments[0].order_items);
       }
 
       res.status(200).json(payments[0]);
@@ -256,7 +207,7 @@ class PaymentsController {
 
     try {
       const [existingPayment] = await conn.query(
-        `SELECT amount, payment_type, amount_paid AS current_amount_paid, id_order FROM payments WHERE id_payment = ?`,
+        `SELECT amount, payment_type, amount_paid AS current_amount_paid FROM payments WHERE id_payment = ?`,
         [id_payment]
       );
 
@@ -269,12 +220,9 @@ class PaymentsController {
         amount: original_amount,
         payment_type: existing_payment_type,
         current_amount_paid,
-        id_order,
       } = existingPayment[0];
 
       let finalAmountPaid = current_amount_paid;
-
-      const currentJakartaTime = getJakartaDateTime();
 
       if (new_status === "success") {
         if (existing_payment_type === "pay_at_cashier") {
@@ -303,20 +251,6 @@ class PaymentsController {
           }
           finalAmountPaid = parsedAmountPaid;
         }
-
-        await conn.query(
-          `UPDATE orders SET status = 'completed' WHERE id_order = ?`,
-          [id_order]
-        );
-      } else if (new_status === "failed") {
-        if (amount_paid !== undefined && amount_paid !== null) {
-          const parsedAmountPaid = parseFloat(amount_paid);
-          finalAmountPaid = isNaN(parsedAmountPaid) ? null : parsedAmountPaid;
-        }
-        await conn.query(
-          `UPDATE orders SET status = 'canceled' WHERE id_order = ?`,
-          [id_order]
-        );
       } else {
         if (amount_paid !== undefined && amount_paid !== null) {
           const parsedAmountPaid = parseFloat(amount_paid);
@@ -324,26 +258,48 @@ class PaymentsController {
         }
       }
 
-      console.log("Final amount_paid to be saved:", finalAmountPaid);
+      console.log("Final amount_paid to be saved:", finalAmountPaid); // Check this log
       console.log("SQL Query parameters:", [
         new_status,
         finalAmountPaid,
-        currentJakartaTime,
         id_payment,
-      ]);
+      ]); // Check parameters
 
       const [result] = await conn.query(
-        `UPDATE payments SET payment_status = ?, amount_paid = ?, payment_time = ? WHERE id_payment = ?`,
-        [new_status, finalAmountPaid, currentJakartaTime, id_payment]
+        `UPDATE payments SET payment_status = ?, amount_paid = ?, payment_time = NOW() WHERE id_payment = ?`,
+        [new_status, finalAmountPaid, id_payment]
       );
 
-      console.log("Database UPDATE query result:", result);
+      console.log("Database UPDATE query result:", result); // Check affectedRows
 
       if (result.affectedRows === 0) {
         await conn.rollback();
         return res.status(404).json({
           message: "Payment not found or status is already the same.",
         });
+      }
+
+      const [orderIdResult] = await conn.query(
+        `SELECT id_order FROM payments WHERE id_payment = ?`,
+        [id_payment]
+      );
+      const id_order = orderIdResult[0]?.id_order;
+
+      if (id_order) {
+        let orderStatusUpdateQuery = "";
+        let orderStatusUpdateParams = [];
+
+        if (new_status === "success") {
+          orderStatusUpdateQuery = `UPDATE orders SET status = 'pending' WHERE id_order = ? AND status = 'waiting'`;
+          orderStatusUpdateParams = [id_order];
+        } else if (new_status === "failed") {
+          orderStatusUpdateQuery = `UPDATE orders SET status = 'canceled' WHERE id_order = ? AND status != 'completed'`;
+          orderStatusUpdateParams = [id_order];
+        }
+
+        if (orderStatusUpdateQuery) {
+          await conn.query(orderStatusUpdateQuery, orderStatusUpdateParams);
+        }
       }
 
       await conn.commit();

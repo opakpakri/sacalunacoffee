@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarCashier from "../../components/SidebarCashier";
 import LogoImage from "../../assets/images/logo.webp";

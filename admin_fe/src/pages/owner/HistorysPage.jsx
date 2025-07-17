@@ -13,7 +13,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { jsPDF } from "jspdf";
-import "jspdf-autotable"; // PENTING: Import ini yang mengaktifkan autoTable di objek jsPDF
+// Import autoTable secara eksplisit sebagai fungsi
+import autoTable from "jspdf-autotable"; // <-- INI PENTING! Import sebagai fungsi
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -259,6 +260,7 @@ function HistorysPage() {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    let yOffset = 10; // Posisi Y awal untuk konten
 
     const filterPeriod = selectedDate
       ? getMonthName(selectedDate)
@@ -279,34 +281,45 @@ function HistorysPage() {
     img.src = LogoImage;
 
     img.onload = () => {
-      doc.addImage(img, "PNG", 14, 10, 25, 25);
+      // --- KIRI ATAS: Logo, Nama Brand, Alamat ---
+      doc.addImage(img, "PNG", 14, yOffset, 25, 25); // Posisi logo
+      yOffset += 5; // Geser sedikit untuk teks
 
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Sacaluna Coffee", 43, 15);
+      doc.text("Sacaluna Coffee", 43, yOffset); // Posisi nama brand
+      yOffset += 5;
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(
-        "Jl. Sidomulyo No.10a, Manukan, Condongcatur, Kec. Depok,\nKabupaten Sleman, Daerah Istimewa Yogyakarta 55281",
-        43,
-        20
-      );
+      // Alamat multiline (gunakan array string)
+      const addressLines = [
+        "Jl. Sidomulyo No.10a, Manukan, Condongcatur, Kec. Depok,",
+        "Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281",
+      ];
+      doc.text(addressLines, 43, yOffset); // Posisi alamat
+      yOffset +=
+        (addressLines.length * doc.getLineHeight()) / doc.internal.scaleFactor +
+        5; // Sesuaikan yOffset setelah alamat
+
+      // --- KANAN ATAS: Judul Laporan, Filter, Total Pendapatan, Tanggal Cetak ---
+      let rightColumnX = pageWidth - 14; // Posisi X untuk kolom kanan (kanan rata)
 
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Laporan Histori Transaksi", pageWidth - 14, 15, {
+      doc.text("Laporan Histori Transaksi", rightColumnX, 15, {
+        // Posisi Y disesuaikan dengan header kiri
         align: "right",
       });
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(`Filter Periode: ${filterPeriod}`, pageWidth - 14, 20, {
+      doc.text(`Filter Periode: ${filterPeriod}`, rightColumnX, 20, {
         align: "right",
       });
       doc.text(
         `Total Pendapatan: Rp ${totalRevenue.toLocaleString("id-ID")}`,
-        pageWidth - 14,
+        rightColumnX,
         25,
         {
           align: "right",
@@ -314,58 +327,72 @@ function HistorysPage() {
       );
       doc.text(
         `Tanggal Cetak: ${tanggalCetak} pukul ${jamCetak}`,
-        pageWidth - 14,
+        rightColumnX,
         30,
         {
           align: "right",
         }
       );
 
+      // Garis pemisah setelah header
       doc.setLineWidth(0.5);
-      doc.line(14, 35, pageWidth - 14, 35);
+      doc.line(14, 35, pageWidth - 14, 35); // Posisi Y garis setelah header
 
-      // PERBAIKAN DI SINI: Panggil autoTable sebagai method dari 'doc'
-      doc.autoTable({
-        // <-- INI PERUBAHANNYA
-        startY: 40,
-        head: [
-          [
-            "ID",
-            "Meja",
-            "Customer",
-            "Telp",
-            "Jumlah",
-            "Metode",
-            "Tipe",
-            "Status Bayar",
-            "Status Order",
-            "Waktu Bayar",
-            "Waktu Order",
-            "Detail",
+      // --- PANGGIL AUTOTABLE SEBAGAI FUNGSI, BUKAN METODE DOC ---
+      // Ini adalah cara yang paling andal untuk jspdf-autotable
+      // Jika `autoTable` diimport sebagai fungsi default dari `jspdf-autotable`
+      if (typeof autoTable === "function") {
+        autoTable(doc, {
+          // <-- Panggil fungsi autoTable dan lewati 'doc' sebagai argumen pertama
+          startY: 40, // Mulai tabel setelah garis pemisah
+          head: [
+            [
+              "ID",
+              "Meja",
+              "Customer",
+              "Telp",
+              "Jumlah",
+              "Metode",
+              "Tipe",
+              "Status Bayar",
+              "Status Order",
+              "Waktu Bayar",
+              "Waktu Order",
+              // "Detail", // Hapus kolom Detail dari PDF jika memang tidak ada aksinya
+            ],
           ],
-        ],
-        body: historyTransactions.map((t) => [
-          t.id_order,
-          t.table_number,
-          t.name_customer,
-          t.phone || "-",
-          `Rp ${t.order_amount.toLocaleString("id-ID")}`,
-          t.payment_method === "online_payment" ? "Online" : "Cashier",
-          t.payment_type || "-",
-          t.payment_status || "-",
-          t.order_status || "-",
-          t.payment_time
-            ? new Date(t.payment_time).toLocaleString("id-ID", dateTimeOptions)
-            : "-",
-          t.order_time
-            ? new Date(t.order_time).toLocaleString("id-ID", dateTimeOptions)
-            : "-",
-          "Lihat",
-        ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0] },
-        margin: { top: 35 },
-      });
+          body: historyTransactions.map((t) => [
+            t.id_order,
+            t.table_number,
+            t.name_customer,
+            t.phone || "-",
+            `Rp ${t.order_amount.toLocaleString("id-ID")}`,
+            t.payment_method === "online_payment" ? "Online" : "Cashier",
+            t.payment_type || "-",
+            t.payment_status || "-",
+            t.order_status || "-",
+            t.payment_time
+              ? new Date(t.payment_time).toLocaleString(
+                  "id-ID",
+                  dateTimeOptions
+                )
+              : "-",
+            t.order_time
+              ? new Date(t.order_time).toLocaleString("id-ID", dateTimeOptions)
+              : "-",
+            // "Lihat", // Hapus nilai "Lihat" dari baris data PDF
+          ]),
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0] },
+          margin: { top: 35 }, // margin.top akan dihitung dari startY, jadi bisa dihilangkan atau diset 0
+        });
+      } else {
+        console.error(
+          "Error: jspdf-autotable plugin did not attach or export correctly."
+        );
+        alert("Gagal membuat PDF. Plugin tabel tidak berfungsi.");
+        return; // Hentikan proses jika autoTable tidak ditemukan
+      }
 
       doc.save("Laporan_History_Transaksi.pdf");
     };
@@ -516,7 +543,7 @@ function HistorysPage() {
                   <th className="p-2 md:p-3 w-[7%]">Detail</th>
                 </tr>
               </thead>
-              <tbody className="text-xs md:text-sm">
+              <tbody>
                 {loading ? (
                   <tr>
                     <td colSpan="12" className="text-center py-8 text-gray-500">

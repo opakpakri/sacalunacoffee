@@ -13,7 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import "jspdf-autotable"; // PENTING: Import ini yang mengaktifkan autoTable di objek jsPDF
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -324,7 +324,9 @@ function HistorysPage() {
       doc.setLineWidth(0.5);
       doc.line(14, 35, pageWidth - 14, 35);
 
+      // PERBAIKAN DI SINI: Panggil autoTable sebagai method dari 'doc'
       doc.autoTable({
+        // <-- INI PERUBAHANNYA
         startY: 40,
         head: [
           [

@@ -13,7 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { jsPDF } from "jspdf";
-import "jspdf-autotable"; // PENTING: Import ini yang mengaktifkan autoTable di objek jsPDF
+import "jspdf-autotable";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -26,19 +26,16 @@ function HistorysPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- Sidebar control states and functions ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   useEffect(() => {
-    // Close sidebar on route change (for mobile)
     if (isSidebarOpen && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-  // --- End Sidebar control states ---
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
@@ -226,7 +223,6 @@ function HistorysPage() {
       );
       if (!response.ok) {
         const errorData = await response.json();
-        // Set error spesifik untuk modal detail
         setDetailModalError(
           errorData.message || "Gagal memuat detail pesanan."
         );

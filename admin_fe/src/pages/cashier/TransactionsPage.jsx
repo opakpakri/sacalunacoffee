@@ -529,7 +529,7 @@ function TransactionsPage() {
           )}
           <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
             <table className="w-full table-auto border-collapse text-xs md:text-sm">
-              <thead className="sticky top-0 bg-gray-200 text-left z-60">
+              <thead className="sticky top-0 bg-gray-200 text-left z-10">
                 <tr>
                   <th className="p-2 md:p-3 w-[5%]">ID</th>
                   <th className="p-2 md:p-3 w-[8%]">No. Meja</th>

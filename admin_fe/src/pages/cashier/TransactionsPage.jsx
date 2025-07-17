@@ -529,7 +529,7 @@ function TransactionsPage() {
           )}
           <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
             <table className="w-full table-auto border-collapse text-xs md:text-sm">
-              <thead className="sticky top-0 bg-gray-200 text-left">
+              <thead className="sticky top-0 bg-gray-200 text-left z-60">
                 <tr>
                   <th className="p-2 md:p-3 w-[5%]">ID</th>
                   <th className="p-2 md:p-3 w-[8%]">No. Meja</th>
@@ -889,7 +889,7 @@ function TransactionsPage() {
       {/* --- Amount Paid Edit Modal (Responsive adjustments) --- */}
       {isAmountEditModalOpen && editAmountTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center  p-4" //z-50
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={closeAmountEditModal}
         >
           <div

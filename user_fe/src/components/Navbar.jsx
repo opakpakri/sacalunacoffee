@@ -13,12 +13,12 @@ function Navbar({
   searchTerm,
   setSearchTerm,
   onCategoryClick,
+  cartItemCount, // NEW: Terima prop cartItemCount
 }) {
   const [activeCategory, setActiveCategory] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false); // State untuk modal search
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
-  // Effect untuk mengatur kategori aktif berdasarkan posisi scroll
   useEffect(() => {
     const handleScroll = () => {
       let currentCategory = "";
@@ -45,7 +45,6 @@ function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [categories]);
 
-  // Handler untuk klik kategori navigasi
   const handleCategoryClick = (category) => {
     setActiveCategory(category);
     onCategoryClick(category);
@@ -58,40 +57,31 @@ function Navbar({
     }
   };
 
-  // --- Efek baru untuk menutup modal search saat menggulir halaman ---
   useEffect(() => {
-    let scrollTimeout; // Untuk debounce scroll event
+    let scrollTimeout;
 
     const handleScrollToCloseModal = () => {
-      // Membersihkan timeout sebelumnya jika ada guliran cepat
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
-      // Set timeout baru untuk menutup setelah jeda singkat
       scrollTimeout = setTimeout(() => {
         if (isSearchModalOpen) {
-          // Pastikan modal search masih terbuka
           setIsSearchModalOpen(false);
         }
-      }, 150); // Jeda 150ms untuk membedakan dari guliran yang sangat kecil/tidak sengaja
+      }, 150);
     };
 
     if (isSearchModalOpen) {
-      // Tambahkan event listener hanya saat modal search terbuka
       window.addEventListener("scroll", handleScrollToCloseModal);
     }
 
-    // Fungsi cleanup: hapus event listener saat modal tertutup atau komponen unmount
     return () => {
       window.removeEventListener("scroll", handleScrollToCloseModal);
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
     };
-  }, [isSearchModalOpen]); // Efek ini akan berjalan ulang setiap kali isSearchModalOpen berubah
-
-  // --- LOGIKA document.body.style.overflow UNTUK MODAL SEARCH TELAH DIHAPUS ---
-  // Sekarang, Anda bisa menggulir halaman utama meskipun modal search terbuka.
+  }, [isSearchModalOpen]);
 
   return (
     <div
@@ -124,7 +114,7 @@ function Navbar({
               type="text"
               placeholder="Cari menu favoritmu..."
               className="pl-10 pr-4 py-2 w-72 bg-white rounded-full text-base shadow-sm
-                         focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                          focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -133,13 +123,13 @@ function Navbar({
           {/* ----- Tombol Search untuk Mobile (Membuka Modal) ----- */}
           <button
             className="md:hidden text-white focus:outline-none"
-            onClick={() => setIsSearchModalOpen(true)} // Membuka modal search
+            onClick={() => setIsSearchModalOpen(true)}
             aria-label="Buka search menu"
           >
             <FontAwesomeIcon icon={faSearch} className="w-6 h-6" />
           </button>
 
-          {/* Cart Icon */}
+          {/* Cart Icon dengan Badge Jumlah */}
           <button
             className="text-white relative p-2 rounded-full hover:bg-yellow-500 hover:text-black transition-colors duration-200 group"
             onClick={toggleCart}
@@ -149,9 +139,16 @@ function Navbar({
               icon={faCartShopping}
               className="text-xl sm:text-2xl group-hover:scale-110 transition-transform duration-200"
             />
+            {/* NEW: Badge untuk jumlah item */}
+            {cartItemCount > 0 && (
+              <span
+                className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full group-hover:scale-110 transition-transform duration-200"
+                aria-label={`${cartItemCount} item di keranjang`}
+              >
+                {cartItemCount}
+              </span>
+            )}
           </button>
-
-          {/* Tombol Hamburger/Menu Utama (jika ada di Navbar ini) telah dihapus dari sini */}
         </div>
       </div>
 
@@ -178,18 +175,19 @@ function Navbar({
         </div>
       </div>
 
-      {/* ----- Mobile Search Modal (Muncul dari Kiri, Tanpa Overlay Gelap) ----- */}
+      {/* Mobile Search Modal */}
       {isSearchModalOpen && (
         <div
           className={`fixed inset-0 z-50 flex items-start justify-center p-4 bg-transparent
-                     transform transition-transform duration-300 ease-in-out
-                     ${
-                       isSearchModalOpen ? "translate-x-0" : "-translate-x-full"
-                     }
-                     md:hidden`} // Hanya terlihat di mobile
+                      transform transition-transform duration-300 ease-in-out
+                      ${
+                        isSearchModalOpen
+                          ? "translate-x-0"
+                          : "-translate-x-full"
+                      }
+                      md:hidden`}
         >
           <div className="relative w-full max-w-lg p-6 bg-black rounded-lg shadow-2xl mt-16">
-            {/* Tombol Tutup Modal Search */}
             <button
               className="absolute top-3 right-3 text-white text-2xl focus:outline-none"
               onClick={() => setIsSearchModalOpen(false)}
@@ -207,7 +205,7 @@ function Navbar({
                 className="w-full pl-10 pr-4 py-3 rounded-full text-lg bg-white shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                autoFocus // Otomatis fokus ke input saat modal terbuka
+                autoFocus
               />
               <FontAwesomeIcon
                 icon={faSearch}

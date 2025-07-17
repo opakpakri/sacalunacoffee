@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CartSidebar from "../components/CartSidebar";
 import MenusPage from "../pages/MenusPage";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar"; // Pastikan import Navbar yang benar
 import Footer from "../components/Footer";
 
 function Home() {
@@ -14,6 +14,9 @@ function Home() {
   const [showCart, setShowCart] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isValidTable, setIsValidTable] = useState(null);
+
+  // NEW: Hitung total item di keranjang
+  const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   useEffect(() => {
     if (tableNumber && token) {
@@ -29,15 +32,12 @@ function Home() {
           const diffInMinutes = (now - timestamp) / (1000 * 60);
 
           if (qrToken === token && diffInMinutes < 20) {
-            // Token cocok dan cart belum expired, load cart
             setCart(storedCart);
           } else {
-            // Token beda atau expired, hapus cart lama
             localStorage.removeItem(`cart_${tableNumber}`);
             setCart([]);
           }
         } catch {
-          // Jika parsing error, hapus data corrupt
           localStorage.removeItem(`cart_${tableNumber}`);
           setCart([]);
         }
@@ -45,7 +45,6 @@ function Home() {
     }
   }, [tableNumber, token]);
 
-  // ✅ Simpan cart + token ke localStorage setiap kali cart berubah
   useEffect(() => {
     if (cart.length > 0 && tableNumber && token) {
       const dataToStore = {
@@ -55,13 +54,11 @@ function Home() {
       };
       localStorage.setItem(`cart_${tableNumber}`, JSON.stringify(dataToStore));
     }
-    // Jika cart kosong, hapus localStorage
     if (cart.length === 0 && tableNumber) {
       localStorage.removeItem(`cart_${tableNumber}`);
     }
   }, [cart, tableNumber, token]);
 
-  // 🔒 Validasi token meja
   useEffect(() => {
     if (tableNumber && token) {
       fetch(
@@ -88,7 +85,6 @@ function Home() {
     }
   }, [tableNumber, token]);
 
-  // 📥 Fetch semua menu
   useEffect(() => {
     fetch("https://sacalunacoffee-production.up.railway.app/api/menus")
       .then((response) => response.json())
@@ -166,6 +162,7 @@ function Home() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         onCategoryClick={handleCategoryClick}
+        cartItemCount={totalCartItems}
       />
 
       <main className="flex-grow relative">

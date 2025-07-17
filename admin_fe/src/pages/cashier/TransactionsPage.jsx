@@ -534,24 +534,16 @@ function TransactionsPage() {
                   <th className="p-2 md:p-3 w-[5%]">ID</th>
                   <th className="p-2 md:p-3 w-[8%]">No. Meja</th>
                   <th className="p-2 md:p-3 w-[12%]">Nama Customer</th>
-                  <th className="p-2 md:p-3 w-[8%] hidden md:table-cell">
-                    No. Telp
-                  </th>
+                  <th className="p-2 md:p-3 w-[8%] ">No. Telp</th>
                   <th className="p-2 md:p-3 w-[10%] text-right">Jumlah</th>
                   <th className="p-2 md:p-3 w-[10%] text-right">
                     Jumlah Bayar
                   </th>
-                  <th className="p-2 md:p-3 w-[6%] hidden sm:table-cell">
-                    Metode Bayar
-                  </th>
-                  <th className="p-2 md:p-3 w-[6%] hidden lg:table-cell">
-                    Tipe Bayar
-                  </th>
+                  <th className="p-2 md:p-3 w-[6%] ">Metode Bayar</th>
+                  <th className="p-2 md:p-3 w-[6%] ">Tipe Bayar</th>
                   <th className="p-2 md:p-3 w-[10%]">Status Bayar</th>
                   <th className="p-2 md:p-3 w-[10%]">Status Order</th>
-                  <th className="p-2 md:p-3 w-[10%] hidden md:table-cell">
-                    Waktu Order
-                  </th>
+                  <th className="p-2 md:p-3 w-[10%] ">Waktu Order</th>
                   <th className="p-2 md:p-3 w-[7%]">Detail</th>
                   <th className="p-2 md:p-3 w-[7%]">Invoice</th>
                 </tr>
@@ -595,10 +587,9 @@ function TransactionsPage() {
                       <td className="p-2 md:p-3 truncate">
                         {transaction.name_customer}
                       </td>
-                      <td className="p-2 md:p-3 hidden md:table-cell">
+                      <td className="p-2 md:p-3 ">
                         {transaction.phone || "-"}
                       </td>{" "}
-                      {/* Hidden on small screens */}
                       <td className="p-2 md:p-3 text-right">
                         Rp {transaction.order_amount.toLocaleString("id-ID")}
                       </td>
@@ -638,16 +629,14 @@ function TransactionsPage() {
                             )}
                         </span>
                       </td>
-                      <td className="p-2 md:p-3 hidden sm:table-cell">
+                      <td className="p-2 md:p-3 ">
                         {" "}
-                        {/* Hidden on extra small screens */}
                         {transaction.payment_method === "online_payment"
                           ? "Online"
                           : "Cashier"}
                       </td>
-                      <td className="p-2 md:p-3 hidden lg:table-cell">
+                      <td className="p-2 md:p-3  ">
                         {" "}
-                        {/* Hidden on small/medium screens */}
                         {transaction.payment_type || "-"}
                       </td>
                       <td className="p-2 md:p-3">
@@ -680,9 +669,8 @@ function TransactionsPage() {
                           {transaction.order_status}
                         </span>
                       </td>
-                      <td className="p-2 md:p-3 hidden md:table-cell">
+                      <td className="p-2 md:p-3 ">
                         {" "}
-                        {/* Hidden on small screens */}
                         {new Date(transaction.order_time).toLocaleString(
                           "id-ID",
                           {
@@ -901,7 +889,7 @@ function TransactionsPage() {
       {/* --- Amount Paid Edit Modal (Responsive adjustments) --- */}
       {isAmountEditModalOpen && editAmountTransaction && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center  p-4" //z-50
           onClick={closeAmountEditModal}
         >
           <div

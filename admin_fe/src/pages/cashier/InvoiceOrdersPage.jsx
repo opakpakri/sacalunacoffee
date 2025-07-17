@@ -86,6 +86,7 @@ function InvoiceOrdersPage() {
         const token = localStorage.getItem("adminToken");
         const response = await fetch(
           `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${trans.id_order}/items`,
+
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -207,7 +208,6 @@ function InvoiceOrdersPage() {
       alert("Konten invoice belum siap untuk dibuat PDF.");
       return;
     }
-    // PERBAIKAN DI SINI: Hapus cek invoiceItems.length === 0
     if (!transactionData) {
       alert("Data transaksi tidak lengkap untuk dibuat PDF.");
       return;
@@ -216,16 +216,21 @@ function InvoiceOrdersPage() {
     const printButton = document.getElementById("print-pdf-button");
     const backButton = document.getElementById("back-payment-button");
 
-    const originalInvoiceStyle = {
-      width: invoiceRef.current.style.width,
-      maxHeight: invoiceRef.current.style.maxHeight,
-      overflowY: invoiceRef.current.style.overflowY,
-      height: invoiceRef.current.style.height,
-    };
+    const originalInvoiceDisplay = invoiceRef.current.style.display;
+    const originalInvoiceVisibility = invoiceRef.current.style.visibility;
+    const originalInvoicePosition = invoiceRef.current.style.position;
+    const originalInvoiceWidth = invoiceRef.current.style.width;
+    const originalInvoiceMaxHeight = invoiceRef.current.style.maxHeight;
+    const originalInvoiceOverflowY = invoiceRef.current.style.overflowY;
+    const originalInvoiceHeight = invoiceRef.current.style.height;
 
     if (printButton) printButton.style.display = "none";
     if (backButton) backButton.style.display = "none";
 
+    // Set gaya pada div tersembunyi agar terlihat dan memiliki layout full-width
+    invoiceRef.current.style.display = "block";
+    invoiceRef.current.style.visibility = "visible";
+    invoiceRef.current.style.position = "static";
     invoiceRef.current.style.width = "210mm";
     invoiceRef.current.style.maxHeight = "none";
     invoiceRef.current.style.overflowY = "visible";
@@ -249,6 +254,10 @@ function InvoiceOrdersPage() {
         useCORS: true,
         logging: true,
         backgroundColor: "#ffffff",
+        width: 210 * 3.779528,
+        height: invoiceRef.current.scrollHeight,
+        windowWidth: 210 * 3.779528,
+        windowHeight: invoiceRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 1);
@@ -280,11 +289,13 @@ function InvoiceOrdersPage() {
       if (printButton) printButton.style.display = "block";
       if (backButton) backButton.style.display = "block";
 
-      // Restore original styles
-      invoiceRef.current.style.width = originalInvoiceStyle.width;
-      invoiceRef.current.style.maxHeight = originalInvoiceStyle.maxHeight;
-      invoiceRef.current.style.overflowY = originalInvoiceStyle.overflowY;
-      invoiceRef.current.style.height = originalInvoiceStyle.height;
+      invoiceRef.current.style.display = originalInvoiceDisplay;
+      invoiceRef.current.style.visibility = originalInvoiceVisibility;
+      invoiceRef.current.style.position = originalInvoicePosition;
+      invoiceRef.current.style.width = originalInvoiceWidth;
+      invoiceRef.current.style.maxHeight = originalInvoiceMaxHeight;
+      invoiceRef.current.style.overflowY = originalInvoiceOverflowY;
+      invoiceRef.current.style.height = originalInvoiceHeight;
     }
   };
 
@@ -308,7 +319,6 @@ function InvoiceOrdersPage() {
           )}
           <div
             className="bg-white shadow-lg p-6 md:p-8 rounded-lg w-full max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
-            ref={invoiceRef}
             style={{
               maxHeight: "80vh",
               overflowY: "auto",
@@ -338,7 +348,7 @@ function InvoiceOrdersPage() {
               </div>
             ) : (
               <>
-                {/* Header Section */}
+                {/* Header Section (Visually Rendered) */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 border-b pb-4">
                   <div className="text-left flex flex-col mb-4 sm:mb-0">
                     <div className="flex items-center mb-1">
@@ -378,7 +388,7 @@ function InvoiceOrdersPage() {
                   </div>
                 </div>
 
-                {/* Customer and Order Details Section */}
+                {/* Customer and Order Details Section (Visually Rendered) */}
                 <div className="flex flex-col sm:flex-row justify-between mb-6 md:mb-8 text-sm md:text-base">
                   <div className="text-left w-full sm:w-1/2 pr-0 sm:pr-4 mb-4 sm:mb-0">
                     <h3 className="text-lg font-semibold mb-2">
@@ -419,7 +429,7 @@ function InvoiceOrdersPage() {
                   </div>
                 </div>
 
-                {/* Items Table Section */}
+                {/* Items Table Section (Visually Rendered) */}
                 <div className="mb-6 md:mb-8 border border-black rounded-md overflow-hidden">
                   <table className="min-w-full border-collapse text-sm md:text-base">
                     <thead className="bg-gray-100 border-b border-gray-200">
@@ -439,7 +449,6 @@ function InvoiceOrdersPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {/* PERUBAHAN UTAMA DI SINI: Tampilkan pesan jika invoiceItems kosong */}
                       {invoiceItems.length === 0 ? (
                         <tr>
                           <td
@@ -537,6 +546,336 @@ function InvoiceOrdersPage() {
           </div>
         </div>
       </div>
+      {/* Kontainer Invoice Tersembunyi untuk PDF Generation */}
+      {transactionData && (
+        <div
+          ref={invoiceRef}
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+            width: "210mm",
+            padding: "20mm 15mm",
+            backgroundColor: "#ffffff",
+            color: "#000000",
+            fontSize: "10pt", // Base font size for the PDF content
+            lineHeight: "1.4",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Duplikasi konten dari div utama yang terlihat */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: "20px",
+              borderBottom: "1px solid #ddd",
+              paddingBottom: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                textAlign: "left",
+                marginBottom: "10px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "5px",
+                }}
+              >
+                <img
+                  src={LogoImage}
+                  alt="Sacaluna"
+                  style={{ height: "35px", width: "35px", marginRight: "8px" }}
+                />{" "}
+                {/* Diperbesar sedikit */}
+                <h1 style={{ fontSize: "20pt", fontWeight: "bold" }}>
+                  Sacaluna Coffee
+                </h1>{" "}
+                {/* Diperbesar */}
+              </div>
+              <p style={{ fontSize: "10pt", color: "#555", maxWidth: "80mm" }}>
+                {" "}
+                {/* Diperbesar */}
+                Jl. Sidomulyo No.10a, Manukan,
+                <br />
+                Condongcatur, Kec. Depok,
+                <br />
+                Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281
+              </p>
+            </div>
+
+            <div style={{ textAlign: "right" }}>
+              <h2
+                style={{
+                  fontSize: "18pt",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                {" "}
+                {/* Diperbesar */}
+                INVOICE #{transactionData?.id_order || "N/A"}
+              </h2>
+              <p style={{ fontSize: "10pt", color: "#555" }}>
+                {" "}
+                {/* Diperbesar */}
+                Jenis Pembayaran:{" "}
+                <span style={{ fontWeight: "bold" }}>
+                  {transactionData?.payment_method === "online_payment"
+                    ? "Online"
+                    : "Cashier"}
+                </span>
+              </p>
+              <p style={{ fontSize: "10pt", color: "#555" }}>
+                {" "}
+                {/* Diperbesar */}
+                Tanggal Pembayaran:{" "}
+                <span style={{ fontWeight: "bold" }}>
+                  {paymentTimeFormatted}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "20px",
+              fontSize: "11pt",
+            }}
+          >
+            {" "}
+            {/* Base font for this section */}
+            <div style={{ textAlign: "left", width: "48%", marginRight: "2%" }}>
+              <h3
+                style={{
+                  fontSize: "13pt",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                {" "}
+                {/* Diperbesar */}
+                Informasi Pelanggan:
+              </h3>
+              <p>
+                <span style={{ fontWeight: "bold" }}>Nama Pelanggan:</span>{" "}
+                {transactionData?.name_customer || "-"}
+              </p>
+              <p>
+                <span style={{ fontWeight: "bold" }}>No. Telp:</span>{" "}
+                {transactionData?.phone || "-"}
+              </p>
+            </div>
+            <div style={{ textAlign: "left", width: "48%", marginLeft: "2%" }}>
+              <h3
+                style={{
+                  fontSize: "13pt",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                {" "}
+                {/* Diperbesar */}
+                Detail Pesanan:
+              </h3>
+              <p>
+                <span style={{ fontWeight: "bold" }}>ID Order:</span>{" "}
+                {transactionData?.id_order || "-"}
+              </p>
+              <p>
+                <span style={{ fontWeight: "bold" }}>Tanggal Order:</span>{" "}
+                {orderTimeFormatted}
+              </p>
+              <p>
+                <span style={{ fontWeight: "bold" }}>Metode Bayar:</span>{" "}
+                {transactionData?.payment_method === "online_payment"
+                  ? "Online"
+                  : "Cashier"}
+              </p>
+              <p>
+                <span style={{ fontWeight: "bold" }}>Status Bayar:</span>{" "}
+                {transactionData?.payment_status || "-"}
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginBottom: "20px",
+              border: "1px solid #000",
+              borderRadius: "5px",
+              overflow: "hidden",
+            }}
+          >
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: "10pt",
+              }}
+            >
+              {" "}
+              {/* Base font for table */}
+              <thead>
+                <tr
+                  style={{
+                    backgroundColor: "#f3f4f6",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "8px",
+                      textAlign: "left",
+                      fontWeight: "bold",
+                      color: "#444",
+                    }}
+                  >
+                    Produk
+                  </th>
+                  <th
+                    style={{
+                      padding: "8px",
+                      textAlign: "center",
+                      fontWeight: "bold",
+                      color: "#444",
+                    }}
+                  >
+                    Jumlah
+                  </th>
+                  <th
+                    style={{
+                      padding: "8px",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "#444",
+                    }}
+                  >
+                    Harga Satuan
+                  </th>
+                  <th
+                    style={{
+                      padding: "8px",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "#444",
+                    }}
+                  >
+                    Subtotal
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceItems.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      style={{
+                        padding: "8px",
+                        textAlign: "center",
+                        color: "#888",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Tidak ada item dalam pesanan ini.
+                    </td>
+                  </tr>
+                ) : (
+                  invoiceItems.map((item, index) => (
+                    <tr
+                      key={index}
+                      style={{
+                        borderBottom: "1px solid #f3f4f6",
+                        backgroundColor:
+                          index % 2 === 0 ? "#ffffff" : "#f9fafb",
+                      }}
+                    >
+                      <td style={{ padding: "8px", textAlign: "left" }}>
+                        {item.menu_name}
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        {item.quantity}
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>
+                        Rp {item.price.toLocaleString("id-ID")}
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "right" }}>
+                        Rp{" "}
+                        {(item.quantity * item.price).toLocaleString("id-ID")}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                padding: "15px",
+                backgroundColor: "#f3f4f6",
+                borderTop: "1px solid #e5e7eb",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                fontSize: "11pt",
+              }}
+            >
+              {" "}
+              {/* Base font for totals */}
+              <div
+                style={{
+                  textAlign: "right",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                <p>Total Harga: Rp {totalAmount.toLocaleString("id-ID")}</p>
+              </div>
+              <div
+                style={{
+                  textAlign: "right",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                <p>Jumlah Dibayar: Rp {amountPaid.toLocaleString("id-ID")}</p>
+              </div>
+              {changeDue > 0 && (
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontWeight: "bold",
+                    color: "#047857",
+                  }}
+                >
+                  <p>Uang Kembalian: Rp {changeDue.toLocaleString("id-ID")}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{ textAlign: "center", marginTop: "30px", fontSize: "10pt" }}
+          >
+            {" "}
+            {/* Base font for footer */}
+            <p style={{ marginBottom: "10px" }}>Thank You, See You Again</p>
+            <span style={{ margin: "0 5px" }}>❤</span>
+            <span style={{ margin: "0 5px" }}>❤</span>
+            <span style={{ margin: "0 5px" }}>❤</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

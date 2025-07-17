@@ -96,19 +96,14 @@ class TransactionCashierController {
       );
 
       if (items.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "No items found for this order ID." });
+        return res.status(200).json([]);
       }
       res.status(200).json(items);
     } catch (error) {
       console.error("Error fetching order items:", error);
-      res
-        .status(500)
-        .json({
-          message:
-            "Failed to fetch order items from database. " + error.message,
-        });
+      res.status(500).json({
+        message: "Failed to fetch order items from database. " + error.message,
+      });
     }
   }
 }

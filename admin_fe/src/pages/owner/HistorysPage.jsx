@@ -13,7 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable"; // PENTING: Import ini yang mengaktifkan autoTable di objek jsPDF
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -71,25 +71,44 @@ function HistorysPage() {
         res.status
       );
 
-      let errorMessage = "";
-      if (res.status === 401 && errorData.expired) {
-        errorMessage =
-          "Sesi Anda telah berakhir karena token kadaluarsa. Anda akan dialihkan ke halaman login.";
-      } else if (res.status === 401 || res.status === 403) {
-        errorMessage =
+      let messageToDisplay =
+        errorData.message || "Terjadi kesalahan yang tidak terduga.";
+      let shouldRedirect = false;
+
+      if (res.status === 401) {
+        if (errorData.expired) {
+          messageToDisplay =
+            "Sesi Anda telah berakhir. Anda akan dialihkan ke halaman login.";
+        } else {
+          messageToDisplay =
+            errorData.message ||
+            "Anda tidak memiliki izin untuk mengakses. Mohon login.";
+        }
+        shouldRedirect = true;
+      } else if (res.status === 403) {
+        messageToDisplay =
           errorData.message ||
-          "Anda tidak memiliki izin untuk mengakses atau melakukan tindakan ini.";
-      } else {
-        errorMessage =
-          "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+          "Anda tidak memiliki izin untuk melakukan tindakan ini.";
+        shouldRedirect = true;
+      } else if (res.status === 404) {
+        setAuthError(null);
+        setError(messageToDisplay);
+        return;
+      } else if (res.status === 500) {
+        messageToDisplay =
+          errorData.message ||
+          "Terjadi kesalahan server. Silakan coba lagi nanti.";
       }
 
-      setAuthError(errorMessage);
+      setAuthError(messageToDisplay);
+      setError(messageToDisplay);
 
-      setTimeout(() => {
-        localStorage.clear();
-        navigate("/");
-      }, 3000);
+      if (shouldRedirect) {
+        setTimeout(() => {
+          localStorage.clear();
+          navigate("/");
+        }, 3000);
+      }
     },
     [navigate]
   );
@@ -136,7 +155,9 @@ function HistorysPage() {
       setTotalRevenue(calculatedRevenue);
     } catch (err) {
       console.error("Error fetching history transactions:", err);
-      setError("Gagal memuat data histori transaksi: " + err.message);
+      setError(
+        "Gagal memuat data histori transaksi: Periksa koneksi internet Anda."
+      );
     } finally {
       setLoading(false);
     }
@@ -196,7 +217,7 @@ function HistorysPage() {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch(
-        `https://sacalunacoffee-production.up.railway.app/api/transactions-cashier/${transaction.id_order}/items`,
+        `https://sacalunacoffee-production.up.railway.app/api/historys-admin/${transaction.id_order}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -204,7 +225,11 @@ function HistorysPage() {
         }
       );
       if (!response.ok) {
-        await handleAuthenticationError(response);
+        const errorData = await response.json();
+        // Set error spesifik untuk modal detail
+        setDetailModalError(
+          errorData.message || "Gagal memuat detail pesanan."
+        );
         return;
       }
       const data = await response.json();
@@ -303,7 +328,7 @@ function HistorysPage() {
       doc.setLineWidth(0.5);
       doc.line(14, 35, pageWidth - 14, 35);
 
-      autoTable(doc, {
+      doc.autoTable({
         startY: 40,
         head: [
           [
@@ -414,7 +439,6 @@ function HistorysPage() {
         <SidebarAdmin
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
-          // Removed openLogoutModal and isLoggingOut props
         />
 
         <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">

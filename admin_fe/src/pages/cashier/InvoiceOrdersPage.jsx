@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import LogoImage from "../../assets/images/logo.webp";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import "jspdf-autotable";
+
 import Navbar from "../../components/Navbar";
 import SidebarCashier from "../../components/SidebarCashier";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -54,12 +56,17 @@ function InvoiceOrdersPage() {
         errorMessage =
           errorData.message ||
           "Anda tidak memiliki izin untuk mengakses atau melakukan tindakan ini.";
+      } else if (res.status === 404) {
+        errorMessage = errorData.message || "Data tidak ditemukan.";
+        setError(errorMessage);
+        return;
       } else {
         errorMessage =
           "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
       }
 
       setAuthError(errorMessage);
+      setError(errorMessage);
 
       setTimeout(() => {
         localStorage.clear();
@@ -85,10 +92,12 @@ function InvoiceOrdersPage() {
             },
           }
         );
+
         if (!response.ok) {
           await handleAuthenticationError(response);
           return;
         }
+
         const data = await response.json();
         setInvoiceItems(data);
       } catch (err) {
@@ -198,6 +207,11 @@ function InvoiceOrdersPage() {
       alert("Konten invoice belum siap untuk dibuat PDF.");
       return;
     }
+    // PERBAIKAN DI SINI: Hapus cek invoiceItems.length === 0
+    if (!transactionData) {
+      alert("Data transaksi tidak lengkap untuk dibuat PDF.");
+      return;
+    }
 
     const printButton = document.getElementById("print-pdf-button");
     const backButton = document.getElementById("back-payment-button");
@@ -266,6 +280,7 @@ function InvoiceOrdersPage() {
       if (printButton) printButton.style.display = "block";
       if (backButton) backButton.style.display = "block";
 
+      // Restore original styles
       invoiceRef.current.style.width = originalInvoiceStyle.width;
       invoiceRef.current.style.maxHeight = originalInvoiceStyle.maxHeight;
       invoiceRef.current.style.overflowY = originalInvoiceStyle.overflowY;
@@ -277,13 +292,11 @@ function InvoiceOrdersPage() {
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 relative">
-        {" "}
         <SidebarCashier
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
         />
         <div className="flex-1 p-4 md:p-8 lg:p-16 flex flex-col items-center overflow-auto">
-          {" "}
           {authError && (
             <div
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 w-full max-w-4xl"
@@ -323,20 +336,9 @@ function InvoiceOrdersPage() {
                   </button>
                 )}
               </div>
-            ) : !transactionData ? (
-              <div className="text-center text-gray-500 py-10">
-                <p className="text-lg mb-4">
-                  Tidak ada data invoice yang tersedia.
-                </p>
-                <button
-                  onClick={() => navigate("/transactionsCashier")}
-                  className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm md:text-base"
-                >
-                  Kembali ke Data Transaksi
-                </button>
-              </div>
             ) : (
               <>
+                {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 border-b pb-4">
                   <div className="text-left flex flex-col mb-4 sm:mb-0">
                     <div className="flex items-center mb-1">
@@ -376,6 +378,7 @@ function InvoiceOrdersPage() {
                   </div>
                 </div>
 
+                {/* Customer and Order Details Section */}
                 <div className="flex flex-col sm:flex-row justify-between mb-6 md:mb-8 text-sm md:text-base">
                   <div className="text-left w-full sm:w-1/2 pr-0 sm:pr-4 mb-4 sm:mb-0">
                     <h3 className="text-lg font-semibold mb-2">
@@ -416,6 +419,7 @@ function InvoiceOrdersPage() {
                   </div>
                 </div>
 
+                {/* Items Table Section */}
                 <div className="mb-6 md:mb-8 border border-black rounded-md overflow-hidden">
                   <table className="min-w-full border-collapse text-sm md:text-base">
                     <thead className="bg-gray-100 border-b border-gray-200">
@@ -435,42 +439,57 @@ function InvoiceOrdersPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {invoiceItems.map((item, index) => (
-                        <tr
-                          key={index}
-                          className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-                        >
-                          <td className="py-2 px-3 text-left">
-                            {item.menu_name || `ID: ${item.id_menu}`}
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            {item.quantity}
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            Rp {item.price.toLocaleString("id-ID")}
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            Rp{" "}
-                            {(item.quantity * item.price).toLocaleString(
-                              "id-ID"
-                            )}
+                      {/* PERUBAHAN UTAMA DI SINI: Tampilkan pesan jika invoiceItems kosong */}
+                      {invoiceItems.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan="4"
+                            className="text-center py-4 text-gray-500"
+                          >
+                            Tidak ada item dalam pesanan ini.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        invoiceItems.map((item, index) => (
+                          <tr
+                            key={index}
+                            className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                          >
+                            <td className="py-2 px-3 text-left">
+                              {item.menu_name}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              {item.quantity}
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              Rp {item.price.toLocaleString("id-ID")}
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              Rp{" "}
+                              {(item.quantity * item.price).toLocaleString(
+                                "id-ID"
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
 
+                  {/* Total Amount, Amount Paid, Change Due */}
                   <div className="flex justify-end p-4 bg-gray-100 border-t border-gray-200 flex-col items-end text-base md:text-xl">
                     <div className="text-right font-bold mb-1">
                       <p>
                         Total Harga: Rp {totalAmount.toLocaleString("id-ID")}
                       </p>
                     </div>
+                    {/* Amount Paid */}
                     <div className="text-right font-bold mb-1">
                       <p>
                         Jumlah Dibayar: Rp {amountPaid.toLocaleString("id-ID")}
                       </p>
                     </div>
+                    {/* Change Due (if applicable) */}
                     {changeDue > 0 && (
                       <div className="text-right font-bold text-green-700">
                         <p>

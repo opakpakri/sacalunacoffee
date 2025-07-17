@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import Navbar from "../../components/Navbar";
 import SidebarCashier from "../../components/SidebarCashier";
 import LogoImage from "../../assets/images/logo.webp";
@@ -12,6 +12,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 
+// Helper function for status classes
 const getStatusClass = (status) => {
   switch (status) {
     case "success":
@@ -24,26 +25,29 @@ const getStatusClass = (status) => {
     case "canceled":
       return "bg-red-200 text-red-800";
     case "processing":
-      return "bg-orange-200 text-orange-800";
+      return "bg-blue-200 text-blue-800";
     default:
       return "bg-gray-100 text-gray-700";
-  } //
+  }
 };
 
 function TransactionsPage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // To track route changes for sidebar close
 
+  // --- Sidebar control states and functions (Added for responsiveness) ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   useEffect(() => {
+    // Close sidebar on route change (for mobile)
     if (isSidebarOpen && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
 
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState([]);
@@ -51,14 +55,17 @@ function TransactionsPage() {
   const [error, setError] = useState(null);
   const [authError, setAuthError] = useState(null);
 
+  // State for Payment Status Modal
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
+  // New States for Amount Paid Edit Modal
   const [isAmountEditModalOpen, setIsAmountEditModalOpen] = useState(false);
   const [editAmountTransaction, setEditAmountTransaction] = useState(null);
   const [tempEditedAmount, setTempEditedAmount] = useState("");
   const [amountEditError, setAmountEditError] = useState(null);
 
+  // States for Order Detail Modal
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [currentDetailTransaction, setCurrentDetailTransaction] =
     useState(null);
@@ -76,31 +83,50 @@ function TransactionsPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (TransactionsPage):",
+        "Detail Error Autentikasi (HistorysPage):",
         errorData,
         "Status HTTP:",
         res.status
       );
 
-      let errorMessage = "";
-      if (res.status === 401 && errorData.expired) {
-        errorMessage =
-          "Sesi Anda telah berakhir karena token kadaluarsa. Anda akan dialihkan ke halaman login.";
-      } else if (res.status === 401 || res.status === 403) {
-        errorMessage =
+      let messageToDisplay =
+        errorData.message || "Terjadi kesalahan yang tidak terduga.";
+      let shouldRedirect = false;
+
+      if (res.status === 401) {
+        if (errorData.expired) {
+          messageToDisplay =
+            "Sesi Anda telah berakhir. Anda akan dialihkan ke halaman login.";
+        } else {
+          messageToDisplay =
+            errorData.message ||
+            "Anda tidak memiliki izin untuk mengakses. Mohon login.";
+        }
+        shouldRedirect = true;
+      } else if (res.status === 403) {
+        messageToDisplay =
           errorData.message ||
-          "Anda tidak memiliki izin untuk mengakses atau melakukan tindakan ini.";
-      } else {
-        errorMessage =
-          "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+          "Anda tidak memiliki izin untuk melakukan tindakan ini.";
+        shouldRedirect = true;
+      } else if (res.status === 404) {
+        setAuthError(null);
+        setError(messageToDisplay);
+        return;
+      } else if (res.status === 500) {
+        messageToDisplay =
+          errorData.message ||
+          "Terjadi kesalahan server. Silakan coba lagi nanti.";
       }
 
-      setAuthError(errorMessage);
+      setAuthError(messageToDisplay);
+      setError(messageToDisplay);
 
-      setTimeout(() => {
-        localStorage.clear();
-        navigate("/");
-      }, 3000);
+      if (shouldRedirect) {
+        setTimeout(() => {
+          localStorage.clear();
+          navigate("/");
+        }, 3000);
+      }
     },
     [navigate]
   );
@@ -128,7 +154,8 @@ function TransactionsPage() {
       console.error("Error fetching transactions:", err);
       setError("Gagal memuat data transaksi. Coba lagi nanti: " + err.message);
     } finally {
-      //
+      // This block is left empty because loading state for initial fetch
+      // and search debounce are managed by their respective useEffects.
     }
   }, [searchTerm, handleAuthenticationError]);
 
@@ -145,14 +172,16 @@ function TransactionsPage() {
     }
 
     const loadInitialData = async () => {
-      setLoading(true);
+      setLoading(true); // Activate initial loading
       await fetchTransactions();
-      setLoading(false);
+      setLoading(false); // Deactivate initial loading after fetch
     };
     loadInitialData();
   }, [navigate, fetchTransactions]);
 
+  // Effect for search (with Debounce)
   useEffect(() => {
+    // Only activate debounce after initial loading is complete
     if (!loading) {
       const delayDebounceFn = setTimeout(async () => {
         await fetchTransactions();
@@ -222,7 +251,7 @@ function TransactionsPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            new_status: editAmountTransaction.payment_status,
+            new_status: editAmountTransaction.payment_status, // Maintain current status
             amount_paid: newAmount,
           }),
         }
@@ -258,12 +287,13 @@ function TransactionsPage() {
       return;
     }
 
+    // Validation for 'success' status
     if (newStatus === "success") {
       const transactionAmountPaid = parseFloat(selectedTransaction.amount_paid);
       const transactionOrderAmount = parseFloat(
         selectedTransaction.order_amount
       );
-      const tolerance = 0.01;
+      const tolerance = 0.01; // Small tolerance for floating point comparisons
 
       if (selectedTransaction.payment_method === "pay_at_cashier") {
         if (
@@ -304,7 +334,7 @@ function TransactionsPage() {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const amountPaidToSend = selectedTransaction.amount_paid;
+      const amountPaidToSend = selectedTransaction.amount_paid; // Use existing amount_paid for API call
 
       const updatePaymentResponse = await fetch(
         `https://sacalunacoffee-production.up.railway.app/api/payments/${id_payment}/status`,
@@ -326,19 +356,20 @@ function TransactionsPage() {
         return;
       }
 
+      // Logic to update order_status based on payment_status change
       let orderStatusToUpdate = null;
       if (
         newStatus === "success" &&
-        selectedTransaction.order_status === "waiting"
+        selectedTransaction.order_status === "waiting" // Only change order status if it's currently 'waiting'
       ) {
-        orderStatusToUpdate = "pending";
+        orderStatusToUpdate = "pending"; // Change order status to pending if payment is successful and order was waiting
       } else if (newStatus === "failed") {
-        orderStatusToUpdate = "canceled";
+        orderStatusToUpdate = "canceled"; // Change order status to canceled if payment fails
       }
 
       if (
         orderStatusToUpdate &&
-        selectedTransaction.order_status !== orderStatusToUpdate
+        selectedTransaction.order_status !== orderStatusToUpdate // Prevent unnecessary updates
       ) {
         const updateOrderResponse = await fetch(
           `https://sacalunacoffee-production.up.railway.app/api/orders/${id_order}/status`,
@@ -367,7 +398,7 @@ function TransactionsPage() {
       }
 
       closeStatusModal();
-      fetchTransactions();
+      fetchTransactions(); // Re-fetch all transactions to update the table
     } catch (err) {
       console.error("Error updating payment status:", err);
       alert("Error: " + err.message);
@@ -377,6 +408,7 @@ function TransactionsPage() {
   const isSuccessButtonDisabled = () => {
     if (!selectedTransaction) return true;
 
+    // Disable if already success, canceled, or completed
     if (
       selectedTransaction.payment_status === "success" ||
       selectedTransaction.order_status === "canceled" ||
@@ -398,12 +430,13 @@ function TransactionsPage() {
       selectedTransaction.payment_method === "online_payment" &&
       selectedTransaction.payment_type === "qris"
     ) {
+      // For QRIS, amount paid must exactly match order amount (within tolerance)
       return (
         isNaN(transactionAmountPaid) ||
         Math.abs(transactionAmountPaid - transactionOrderAmount) > tolerance
       );
     }
-    return false;
+    return false; // Should not reach here if all cases handled above
   };
 
   const openDetailModal = async (transaction) => {
@@ -455,19 +488,24 @@ function TransactionsPage() {
       <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 relative">
         {" "}
+        {/* Added relative for sidebar positioning */}
         <SidebarCashier
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
         />
         <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
           {" "}
+          {/* Adjusted padding */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
             {" "}
+            {/* Adjusted spacing and alignment */}
             <h1 className="text-xl md:text-2xl font-bold">
               Today Transaction
             </h1>{" "}
+            {/* Responsive font size */}
             <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-auto max-w-xs">
               {" "}
+              {/* Responsive width */}
               <label className="text-sm font-medium whitespace-nowrap">
                 Cari Data:
               </label>
@@ -490,9 +528,7 @@ function TransactionsPage() {
             </div>
           )}
           <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
-            {" "}
             <table className="w-full table-auto border-collapse text-xs md:text-sm">
-              {" "}
               <thead className="sticky top-0 bg-gray-200 text-left">
                 <tr>
                   <th className="p-2 md:p-3 w-[5%]">ID</th>
@@ -500,28 +536,27 @@ function TransactionsPage() {
                   <th className="p-2 md:p-3 w-[12%]">Nama Customer</th>
                   <th className="p-2 md:p-3 w-[8%] hidden md:table-cell">
                     No. Telp
-                  </th>{" "}
+                  </th>
                   <th className="p-2 md:p-3 w-[10%] text-right">Jumlah</th>
                   <th className="p-2 md:p-3 w-[10%] text-right">
                     Jumlah Bayar
                   </th>
                   <th className="p-2 md:p-3 w-[6%] hidden sm:table-cell">
                     Metode Bayar
-                  </th>{" "}
+                  </th>
                   <th className="p-2 md:p-3 w-[6%] hidden lg:table-cell">
                     Tipe Bayar
-                  </th>{" "}
+                  </th>
                   <th className="p-2 md:p-3 w-[10%]">Status Bayar</th>
                   <th className="p-2 md:p-3 w-[10%]">Status Order</th>
                   <th className="p-2 md:p-3 w-[10%] hidden md:table-cell">
                     Waktu Order
-                  </th>{" "}
+                  </th>
                   <th className="p-2 md:p-3 w-[7%]">Detail</th>
                   <th className="p-2 md:p-3 w-[7%]">Invoice</th>
                 </tr>
               </thead>
               <tbody className="text-xs md:text-sm">
-                {" "}
                 {loading ? (
                   <tr>
                     <td colSpan="13" className="text-center py-8 text-gray-500">
@@ -563,6 +598,7 @@ function TransactionsPage() {
                       <td className="p-2 md:p-3 hidden md:table-cell">
                         {transaction.phone || "-"}
                       </td>{" "}
+                      {/* Hidden on small screens */}
                       <td className="p-2 md:p-3 text-right">
                         Rp {transaction.order_amount.toLocaleString("id-ID")}
                       </td>
@@ -604,12 +640,14 @@ function TransactionsPage() {
                       </td>
                       <td className="p-2 md:p-3 hidden sm:table-cell">
                         {" "}
+                        {/* Hidden on extra small screens */}
                         {transaction.payment_method === "online_payment"
                           ? "Online"
                           : "Cashier"}
                       </td>
                       <td className="p-2 md:p-3 hidden lg:table-cell">
                         {" "}
+                        {/* Hidden on small/medium screens */}
                         {transaction.payment_type || "-"}
                       </td>
                       <td className="p-2 md:p-3">
@@ -644,6 +682,7 @@ function TransactionsPage() {
                       </td>
                       <td className="p-2 md:p-3 hidden md:table-cell">
                         {" "}
+                        {/* Hidden on small screens */}
                         {new Date(transaction.order_time).toLocaleString(
                           "id-ID",
                           {
@@ -678,6 +717,7 @@ function TransactionsPage() {
               </tbody>
             </table>
           </div>
+          {/* Sacaluna Coffee branding (Moved to bottom right, no longer fixed) */}
           <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
             <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
               <img
@@ -691,6 +731,7 @@ function TransactionsPage() {
         </div>
       </div>
 
+      {/* Payment Status Modal (Responsive adjustments) */}
       {isStatusModalOpen && selectedTransaction && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -774,7 +815,9 @@ function TransactionsPage() {
               </span>
             </div>
 
+            {/* Buttons for status change */}
             <div className="flex flex-col gap-3">
+              {/* 'Sukses' button */}
               {selectedTransaction.payment_status !== "success" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -800,6 +843,7 @@ function TransactionsPage() {
                   </button>
                 )}
 
+              {/* 'Batal' button */}
               {selectedTransaction.payment_status !== "success" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -825,6 +869,7 @@ function TransactionsPage() {
                   </button>
                 )}
 
+              {/* "Pending" button */}
               {selectedTransaction.payment_status !== "pending" &&
                 selectedTransaction.order_status !== "canceled" &&
                 selectedTransaction.order_status !== "completed" && (
@@ -853,6 +898,7 @@ function TransactionsPage() {
         </div>
       )}
 
+      {/* --- Amount Paid Edit Modal (Responsive adjustments) --- */}
       {isAmountEditModalOpen && editAmountTransaction && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -923,6 +969,7 @@ function TransactionsPage() {
         </div>
       )}
 
+      {/* Order Detail Modal (Responsive adjustments) */}
       {isDetailModalOpen && currentDetailTransaction && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"

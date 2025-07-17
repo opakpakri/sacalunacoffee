@@ -1,6 +1,6 @@
 const db = require("../config/db");
 
-class HistoryCashierController {
+class HistoryController {
   static async getAllTransactions(req, res) {
     const { searchTerm, month, year } = req.query;
 
@@ -84,6 +84,49 @@ class HistoryCashierController {
       });
     }
   }
+
+  // --- FUNGSI BARU: Mendapatkan item pesanan berdasarkan ID Order ---
+  static async getOrderItemsByOrderId(req, res) {
+    const { id_order } = req.params;
+
+    if (!id_order) {
+      return res.status(400).json({ message: "Order ID is required." });
+    }
+
+    try {
+      const [items] = await db.query(
+        `
+        SELECT
+            oi.id_order_item,
+            oi.id_order,
+            oi.id_menu,
+            oi.quantity,
+            oi.price,
+            COALESCE(m.name_menu, 'Menu Dihapus') AS menu_name, -- Gunakan COALESCE
+            m.image_menu -- Jika Anda perlu data gambar menu
+        FROM
+            order_items oi
+        LEFT JOIN -- Penting: Gunakan LEFT JOIN untuk tetap menyertakan order_items dengan id_menu NULL
+            menus m ON oi.id_menu = m.id_menu
+        WHERE
+            oi.id_order = ?
+        ORDER BY oi.id_order_item ASC
+        `,
+        [id_order]
+      );
+
+      // Kalau tidak ada item untuk order ID tersebut, kirim respons 200 dengan array kosong
+      if (items.length === 0) {
+        return res.status(200).json([]);
+      }
+
+      res.status(200).json(items);
+    } catch (error) {
+      console.error("Error fetching order items by Order ID:", error.message);
+      res.status(500).json({ message: "Failed to retrieve order items." });
+    }
+  }
+  // --- AKHIR FUNGSI BARU ---
 }
 
-module.exports = HistoryCashierController;
+module.exports = HistoryController;

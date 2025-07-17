@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import SidebarAdmin from "../../components/SidebarAdmin";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaTrash } from "react-icons/fa";
 import LogoImage from "../../assets/images/logo.webp";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -37,6 +37,13 @@ function MenusPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // --- State dan fungsi untuk modal hapus ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [menuToDeleteId, setMenuToDeleteId] = useState(null);
+  const [menuToDeleteName, setMenuToDeleteName] = useState("");
+  // --- End State dan fungsi untuk modal hapus ---
+
+  // Fungsi terpusat untuk menangani error autentikasi
   const handleAuthenticationError = useCallback(
     async (res) => {
       let errorData = { message: "Terjadi kesalahan yang tidak terduga." };
@@ -47,7 +54,7 @@ function MenusPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (HistorysPage):",
+        "Detail Error Autentikasi (MenusPage):", // Ubah ke MenusPage
         errorData,
         "Status HTTP:",
         res.status
@@ -76,6 +83,7 @@ function MenusPage() {
     [navigate]
   );
 
+  // fetchMenus kini mengambil SEMUA menu, filtering dilakukan di frontend
   const fetchMenus = useCallback(async () => {
     setAuthError(null);
     const token = localStorage.getItem("adminToken");
@@ -96,7 +104,7 @@ function MenusPage() {
       }
 
       const data = await res.json();
-      setMenus(data.data);
+      setMenus(data.data); // Asumsi data menu ada di 'data.data'
       setAuthError(null);
     } catch (error) {
       console.error(
@@ -107,8 +115,9 @@ function MenusPage() {
         "Gagal memuat daftar menu. Pastikan server berjalan dan koneksi internet Anda stabil."
       );
     }
-  }, [handleAuthenticationError]);
+  }, [handleAuthenticationError]); // Dependensi hanya pada handleAuthenticationError
 
+  // Effect untuk loading awal
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const user = JSON.parse(localStorage.getItem("user"));
@@ -124,13 +133,15 @@ function MenusPage() {
 
     const loadMenusData = async () => {
       setInitialLoading(true);
-      await fetchMenus();
+      await fetchMenus(); // Panggil fetchMenus untuk loading awal (mengambil semua data)
       setInitialLoading(false);
     };
 
     loadMenusData();
   }, [navigate, fetchMenus]);
 
+  // filteredMenus kini berfungsi sebagai filter frontend
+  // Ini akan dihitung ulang setiap kali `menus` (semua data) atau `searchTerm` berubah.
   const filteredMenus = menus.filter(
     (menu) =>
       menu.name_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,16 +149,20 @@ function MenusPage() {
       menu.price.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Effect untuk pencarian (dengan Debounce)
   useEffect(() => {
+    // Hanya aktifkan debounce setelah loading awal selesai
     if (!initialLoading) {
-      setSearchLoading(true);
+      setSearchLoading(true); // Aktifkan loading pencarian segera setelah searchTerm berubah
       const delayDebounceFn = setTimeout(() => {
+        // Karena filtering dilakukan di frontend, tidak perlu panggil fetchMenus lagi.
+        // Cukup matikan loading setelah delay.
         setSearchLoading(false);
-      }, 500);
+      }, 500); // Debounce 500ms
 
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [searchTerm, initialLoading]);
+  }, [searchTerm, initialLoading]); // searchTerm adalah dependensi utama untuk debounce filtering frontend
 
   const openImageModal = (imageUrl) => {
     setSelectedImageUrl(imageUrl);
@@ -158,6 +173,50 @@ function MenusPage() {
     setShowImageModal(false);
     setSelectedImageUrl("");
   };
+
+  // --- Fungsi untuk menghapus menu ---
+  const openDeleteModal = (menuId, menuName) => {
+    setMenuToDeleteId(menuId);
+    setMenuToDeleteName(menuName);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setMenuToDeleteId(null);
+    setMenuToDeleteName("");
+  };
+
+  const handleDeleteMenu = async () => {
+    if (!menuToDeleteId) return;
+
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `https://sacalunacoffee-production.up.railway.app/api/menus/${menuToDeleteId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        await handleAuthenticationError(response); // Re-use auth error handler
+        return;
+      }
+
+      const data = await response.json();
+      alert(data.message || "Menu berhasil dihapus!");
+      closeDeleteModal();
+      fetchMenus(); // Refresh daftar menu setelah penghapusan
+    } catch (error) {
+      console.error("Error deleting menu:", error);
+      alert("Gagal menghapus menu: " + error.message);
+    }
+  };
+  // --- End Fungsi untuk menghapus menu ---
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -265,6 +324,15 @@ function MenusPage() {
                           >
                             <FaEdit className="w-4 h-4 md:w-5 md:h-5" />
                           </button>
+                          {/* Tombol Hapus */}
+                          <button
+                            onClick={() =>
+                              openDeleteModal(menu.id_menu, menu.name_menu)
+                            }
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            <FaTrash className="w-4 h-4 md:w-5 md:h-5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -274,6 +342,7 @@ function MenusPage() {
             </table>
           </div>
 
+          {/* Add Menu Button */}
           <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
             <button
               onClick={() => navigate("/menus/add-menu")}
@@ -283,6 +352,7 @@ function MenusPage() {
               Add Menu
             </button>
 
+            {/* Sacaluna Coffee branding */}
             <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
               <img
                 src={LogoImage}
@@ -314,7 +384,55 @@ function MenusPage() {
               src={selectedImageUrl}
               alt="Menu"
               className="w-full h-auto object-contain rounded"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src =
+                  "https://placehold.co/400x300/cccccc/000000?text=Image+Load+Error";
+              }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeDeleteModal}
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+            >
+              <FontAwesomeIcon icon={faXmark} className="text-xl" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center">
+              Konfirmasi Penghapusan
+            </h2>
+            <p className="text-gray-700 text-center mb-6">
+              Apakah Anda yakin ingin menghapus menu{" "}
+              <span className="font-bold">"{menuToDeleteName}"</span>?
+              <br />
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleDeleteMenu}
+                className="bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              >
+                Ya, Hapus
+              </button>
+              <button
+                onClick={closeDeleteModal}
+                className="bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-400 transition-colors"
+              >
+                Batal
+              </button>
+            </div>
           </div>
         </div>
       )}

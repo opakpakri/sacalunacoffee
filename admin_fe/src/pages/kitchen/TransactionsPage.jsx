@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import Navbar from "../../components/Navbar";
 import SidebarKitchen from "../../components/SidebarKitchen";
 import LogoImage from "../../assets/images/logo.webp";
@@ -10,6 +10,7 @@ import {
   faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
+// Helper function for status classes
 const getStatusClass = (status) => {
   switch (status) {
     case "pending":
@@ -17,7 +18,7 @@ const getStatusClass = (status) => {
       return "bg-gray-200 text-gray-800";
     case "processing":
       return "bg-orange-200 text-orange-800";
-    case "completed":
+    case "completed": // <-- Hanya gunakan 'completed' untuk status selesai
       return "bg-green-200 text-green-800";
     case "canceled":
       return "bg-red-200 text-red-800";
@@ -28,7 +29,7 @@ const getStatusClass = (status) => {
 
 function TransactionsPage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // To track route changes for sidebar close
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,16 +47,19 @@ function TransactionsPage() {
   const [detailModalLoading, setDetailModalLoading] = useState(false);
   const [detailModalError, setDetailModalError] = useState(null);
 
+  // --- Sidebar control states and functions (Added for responsiveness) ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   useEffect(() => {
+    // Close sidebar on route change (for mobile)
     if (isSidebarOpen && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // --- End Sidebar control states ---
 
   const handleAuthenticationError = useCallback(
     async (res) => {
@@ -67,31 +71,50 @@ function TransactionsPage() {
       }
 
       console.error(
-        "Detail Error Autentikasi (Kitchen TransactionsPage):",
+        "Detail Error Autentikasi (HistorysPage):",
         errorData,
         "Status HTTP:",
         res.status
       );
 
-      let errorMessage = "";
-      if (res.status === 401 && errorData.expired) {
-        errorMessage =
-          "Sesi Anda telah berakhir karena token kadaluarsa. Anda akan dialihkan ke halaman login.";
-      } else if (res.status === 401 || res.status === 403) {
-        errorMessage =
+      let messageToDisplay =
+        errorData.message || "Terjadi kesalahan yang tidak terduga.";
+      let shouldRedirect = false;
+
+      if (res.status === 401) {
+        if (errorData.expired) {
+          messageToDisplay =
+            "Sesi Anda telah berakhir. Anda akan dialihkan ke halaman login.";
+        } else {
+          messageToDisplay =
+            errorData.message ||
+            "Anda tidak memiliki izin untuk mengakses. Mohon login.";
+        }
+        shouldRedirect = true;
+      } else if (res.status === 403) {
+        messageToDisplay =
           errorData.message ||
-          "Anda tidak memiliki izin untuk mengakses atau melakukan tindakan ini.";
-      } else {
-        errorMessage =
-          "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+          "Anda tidak memiliki izin untuk melakukan tindakan ini.";
+        shouldRedirect = true;
+      } else if (res.status === 404) {
+        setAuthError(null);
+        setError(messageToDisplay);
+        return;
+      } else if (res.status === 500) {
+        messageToDisplay =
+          errorData.message ||
+          "Terjadi kesalahan server. Silakan coba lagi nanti.";
       }
 
-      setAuthError(errorMessage);
+      setAuthError(messageToDisplay);
+      setError(messageToDisplay);
 
-      setTimeout(() => {
-        localStorage.clear();
-        navigate("/");
-      }, 3000);
+      if (shouldRedirect) {
+        setTimeout(() => {
+          localStorage.clear();
+          navigate("/");
+        }, 3000);
+      }
     },
     [navigate]
   );
@@ -224,19 +247,24 @@ function TransactionsPage() {
       <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <div className="flex flex-1 relative">
         {" "}
+        {/* Added relative for sidebar positioning */}
         <SidebarKitchen
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
         />
         <div className="flex-1 p-4 md:p-8 lg:p-16 overflow-auto">
           {" "}
+          {/* Adjusted padding */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
             {" "}
+            {/* Adjusted spacing and alignment */}
             <h1 className="text-xl md:text-2xl font-bold">
               Today Transaction
             </h1>{" "}
+            {/* Responsive font size */}
             <div className="flex items-center gap-2 border border-black rounded-lg shadow-sm px-4 py-2 h-11 w-full sm:w-auto max-w-xs">
               {" "}
+              {/* Responsive width */}
               <label className="text-sm font-medium whitespace-nowrap">
                 Cari Data:
               </label>
@@ -260,8 +288,10 @@ function TransactionsPage() {
           )}
           <div className="bg-white border rounded shadow-md w-full h-[60vh] md:h-[700px] overflow-auto">
             {" "}
+            {/* Adjusted height and overflow */}
             <table className="w-full table-auto border-collapse text-xs md:text-sm">
               {" "}
+              {/* Changed to table-auto for better content fitting on small screens */}
               <thead className="sticky top-0 bg-gray-200 text-left">
                 <tr>
                   <th className="p-2 md:p-3 w-[15%]">ID Order</th>
@@ -275,6 +305,7 @@ function TransactionsPage() {
               </thead>
               <tbody className="text-xs md:text-sm">
                 {" "}
+                {/* Responsive font size */}
                 {loading ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-gray-500">
@@ -358,6 +389,7 @@ function TransactionsPage() {
               </tbody>
             </table>
           </div>
+          {/* Sacaluna Coffee branding (Moved to bottom right, no longer fixed) */}
           <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-4">
             <div className="flex items-center gap-2 pt-12 text-xs md:text-sm font-semibold sm:ml-auto sm:pt-0">
               <img
@@ -371,6 +403,7 @@ function TransactionsPage() {
         </div>
       </div>
 
+      {/* Order Status Modal (Kitchen Version) - Responsive adjustments */}
       {isOrderStatusModalOpen && selectedOrderToChangeStatus && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -431,6 +464,7 @@ function TransactionsPage() {
             </div>
 
             <div className="flex flex-col gap-3">
+              {/* Buttons to change status based on current status */}
               {selectedOrderToChangeStatus.order_status === "pending" && (
                 <button
                   onClick={() =>
@@ -472,6 +506,7 @@ function TransactionsPage() {
         </div>
       )}
 
+      {/* Order Detail Modal (Kitchen Version) - Responsive adjustments */}
       {isDetailModalOpen && currentDetailTransaction && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"

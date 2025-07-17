@@ -92,9 +92,7 @@ class TransactionKitchenController {
       );
 
       if (items.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "No items found for this order ID." });
+        return res.status(200).json([]);
       }
 
       res.status(200).json(items);

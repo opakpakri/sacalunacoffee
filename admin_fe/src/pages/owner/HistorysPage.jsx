@@ -13,8 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { jsPDF } from "jspdf";
-// Import autoTable secara eksplisit sebagai fungsi
-import autoTable from "jspdf-autotable"; // <-- INI PENTING! Import sebagai fungsi
+import autoTable from "jspdf-autotable";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -260,7 +259,7 @@ function HistorysPage() {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yOffset = 10; // Posisi Y awal untuk konten
+    let yOffset = 10;
 
     const filterPeriod = selectedDate
       ? getMonthName(selectedDate)
@@ -281,34 +280,30 @@ function HistorysPage() {
     img.src = LogoImage;
 
     img.onload = () => {
-      // --- KIRI ATAS: Logo, Nama Brand, Alamat ---
-      doc.addImage(img, "PNG", 14, yOffset, 25, 25); // Posisi logo
-      yOffset += 5; // Geser sedikit untuk teks
+      doc.addImage(img, "PNG", 14, yOffset, 25, 25);
+      yOffset += 5;
 
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Sacaluna Coffee", 43, yOffset); // Posisi nama brand
+      doc.text("Sacaluna Coffee", 43, yOffset);
       yOffset += 5;
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      // Alamat multiline (gunakan array string)
       const addressLines = [
         "Jl. Sidomulyo No.10a, Manukan, Condongcatur, Kec. Depok,",
         "Kabupaten Sleman, Daerah Istimewa Yogyakarta 55281",
       ];
-      doc.text(addressLines, 43, yOffset); // Posisi alamat
+      doc.text(addressLines, 43, yOffset);
       yOffset +=
         (addressLines.length * doc.getLineHeight()) / doc.internal.scaleFactor +
-        5; // Sesuaikan yOffset setelah alamat
+        5;
 
-      // --- KANAN ATAS: Judul Laporan, Filter, Total Pendapatan, Tanggal Cetak ---
-      let rightColumnX = pageWidth - 14; // Posisi X untuk kolom kanan (kanan rata)
+      let rightColumnX = pageWidth - 14;
 
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Laporan Histori Transaksi", rightColumnX, 15, {
-        // Posisi Y disesuaikan dengan header kiri
         align: "right",
       });
 
@@ -334,17 +329,12 @@ function HistorysPage() {
         }
       );
 
-      // Garis pemisah setelah header
       doc.setLineWidth(0.5);
-      doc.line(14, 35, pageWidth - 14, 35); // Posisi Y garis setelah header
+      doc.line(14, 35, pageWidth - 14, 35);
 
-      // --- PANGGIL AUTOTABLE SEBAGAI FUNGSI, BUKAN METODE DOC ---
-      // Ini adalah cara yang paling andal untuk jspdf-autotable
-      // Jika `autoTable` diimport sebagai fungsi default dari `jspdf-autotable`
       if (typeof autoTable === "function") {
         autoTable(doc, {
-          // <-- Panggil fungsi autoTable dan lewati 'doc' sebagai argumen pertama
-          startY: 40, // Mulai tabel setelah garis pemisah
+          startY: 40,
           head: [
             [
               "ID",
@@ -358,7 +348,6 @@ function HistorysPage() {
               "Status Order",
               "Waktu Bayar",
               "Waktu Order",
-              // "Detail", // Hapus kolom Detail dari PDF jika memang tidak ada aksinya
             ],
           ],
           body: historyTransactions.map((t) => [

@@ -12,6 +12,7 @@ function EditBarcodesPage() {
   const [tableNumber, setTableNumber] = useState("");
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState(null); // Add formError state
   const navigate = useNavigate();
   const location = useLocation();
   const [authError, setAuthError] = useState(null);
@@ -113,10 +114,12 @@ function EditBarcodesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError(null);
+    setFormError(null); // Clear formError on new submission attempt
     setIsSaving(true);
 
     if (!tableNumber.trim()) {
       alert("Nomor meja tidak boleh kosong!");
+      setFormError("Nomor meja tidak boleh kosong!"); // Set formError
       setIsSaving(false);
       return;
     }
@@ -136,7 +139,15 @@ function EditBarcodesPage() {
       );
 
       if (!response.ok) {
-        await handleAuthenticationError(response);
+        const errorData = await response.json(); // Parse error response
+        if (response.status === 409) {
+          // Check for 409 Conflict status code
+          const errorMessage = errorData.message || "Nomor meja sudah ada.";
+          alert(errorMessage);
+          setFormError(errorMessage); // Set formError for duplicate table number
+        } else {
+          await handleAuthenticationError(response);
+        }
         return;
       }
 
@@ -145,7 +156,8 @@ function EditBarcodesPage() {
       navigate("/barcodeCashier");
     } catch (error) {
       console.error("Error updating table:", error);
-      setAuthError("Terjadi kesalahan saat mengedit meja: " + error.message);
+      alert("Terjadi kesalahan saat mengedit meja.");
+      setFormError("Terjadi kesalahan saat mengedit meja: " + error.message); // Set formError for other errors
     } finally {
       setIsSaving(false);
     }
@@ -205,6 +217,7 @@ function EditBarcodesPage() {
                   onChange={(e) => {
                     setTableNumber(e.target.value);
                     e.target.setCustomValidity("");
+                    setFormError(null); // Clear formError when input changes
                   }}
                   onInvalid={(e) =>
                     e.target.setCustomValidity(
@@ -214,6 +227,11 @@ function EditBarcodesPage() {
                   className="px-4 py-2 md:py-4 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base" /* Responsive padding and font size */
                   required
                 />
+                {formError && ( // Display formError
+                  <p className="text-red-500 text-xs md:text-sm mt-2">
+                    {formError}
+                  </p>
+                )}
               </div>
               <div className="mt-8 md:mt-12 flex justify-center">
                 {" "}

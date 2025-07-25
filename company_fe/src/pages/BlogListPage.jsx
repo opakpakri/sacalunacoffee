@@ -50,7 +50,7 @@ function BlogListPage() {
   const sortedBlogs = [...blogs].sort((a, b) => {
     const timeA = new Date(a.time).getTime();
     const timeB = new Date(b.time).getTime();
-    return sortOrder === "asc" ? timeA - timeB : timeB - a; // Perbaikan di sini
+    return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
   });
 
   const formatBlogDate = (dateString) => {

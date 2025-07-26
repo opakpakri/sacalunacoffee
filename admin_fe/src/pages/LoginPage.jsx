@@ -165,7 +165,7 @@ function LoginPage() {
               required
             />
             <div
-              className="absolute right-3 top-[42px] sm:top-[46px] cursor-pointer text-gray-600"
+              className="absolute right-3 top-[36px] sm:top-[46px] cursor-pointer text-gray-600"
               onClick={togglePassword}
             >
               {showPassword ? (

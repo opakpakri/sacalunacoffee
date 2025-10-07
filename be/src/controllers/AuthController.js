@@ -38,12 +38,8 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id_user: user.id_user, role: user.role, name_user: user.name_user },
       JWT_SECRET,
-      { expiresIn: "1d" } // <-- ubah ke "1m" untuk testing
+      { expiresIn: "1d" } // <-- UBAH KE "1m" UNTUK TESTING
     );
-
-    // 🔍 Log token di console
-    console.log("✅ Login berhasil untuk user:", user.name_user);
-    console.log("🎫 Token JWT:", token);
 
     return res.status(200).json({
       message: "Login berhasil",
@@ -55,7 +51,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Login error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ message: "Terjadi kesalahan server" });
   }
 };

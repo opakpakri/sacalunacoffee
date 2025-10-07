@@ -53,7 +53,7 @@ app.use((req, res) => {
   res.status(404).json({ error: "Endpoint Not Found" });
 });
 
-// Start server //a
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

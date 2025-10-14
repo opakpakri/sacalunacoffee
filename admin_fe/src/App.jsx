@@ -16,6 +16,7 @@ import BarcodesPageCashier from "./pages/cashier/BarcodesPage";
 import AddBarcodesPageCashier from "./pages/cashier/AddBarcodesPage";
 import EditBarcodesPageCashier from "./pages/cashier/EditBarcodesPage";
 import InvoiceOrdersPage from "./pages/cashier/InvoiceOrdersPage";
+import StockMenusPage from "./pages/kitchen/StockMenusPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           path="/transactionsKitchen"
           element={<TransactionsPageKitchen />}
         />
+        <Route path="/stockMenus" element={<StockMenusPage />} />
         <Route
           path="/transactionsCashier"
           element={<TransactionsPageCashier />}

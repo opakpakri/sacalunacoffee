@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaUser, FaSignOutAlt, FaSpinner } from "react-icons/fa";
+import { FaUser, FaBoxOpen, FaSignOutAlt, FaSpinner } from "react-icons/fa";
 
 function SidebarKitchen({ isSidebarOpen, toggleSidebar }) {
   const navigate = useNavigate();
@@ -53,6 +53,7 @@ function SidebarKitchen({ isSidebarOpen, toggleSidebar }) {
 
   const menuItems = [
     { label: "Transaction", icon: <FaUser />, path: "/transactionsKitchen" },
+    { label: "Stock", icon: <FaBoxOpen />, path: "/stockMenus" },
   ];
 
   return (

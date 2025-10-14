@@ -189,10 +189,15 @@ function MenusPage({ addToCart, searchTerm }) {
                   .filter((menu) => menu.category_menu === category)
                   .map((menu) => {
                     const badge = getMenuTypeBadge(menu.name_menu);
+                    const isOutOfStock = menu.stock <= 0;
                     return (
                       <div
                         key={menu.id_menu}
-                        className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 duration-300 ease-in-out overflow-hidden cursor-pointer group flex flex-col"
+                        className={`relative bg-white rounded-xl shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out overflow-hidden flex flex-col ${
+                          isOutOfStock
+                            ? "opacity-70 grayscale cursor-not-allowed"
+                            : "hover:shadow-xl"
+                        }`}
                       >
                         <div className="relative h-60 w-full overflow-hidden rounded-t-xl">
                           {badge && (
@@ -206,9 +211,18 @@ function MenusPage({ addToCart, searchTerm }) {
                           <img
                             src={menu.image_menu}
                             alt={menu.name_menu}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            className={`w-full h-full object-cover transition-transform duration-300 ${
+                              isOutOfStock
+                                ? "grayscale"
+                                : "group-hover:scale-110"
+                            }`}
                             loading="lazy"
                           />
+                          {isOutOfStock && (
+                            <div className="absolute inset-0  bg-opacity-70 flex items-center justify-center text-black font-bold text-xl">
+                              Maaf, Menu Tidak Tersedia
+                            </div>
+                          )}
                         </div>
                         <div className="p-5 flex flex-col flex-grow">
                           <h3 className="text-xl font-bold text-gray-900 h-8 overflow-hidden leading-tight">
@@ -222,18 +236,20 @@ function MenusPage({ addToCart, searchTerm }) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAddToCartClick(menu);
+                                if (!isOutOfStock) handleAddToCartClick(menu);
                               }}
-                              className="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center shadow-md
-                                         hover:bg-yellow-600 hover:scale-110 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-700"
+                              disabled={isOutOfStock}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-700 ${
+                                isOutOfStock
+                                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                  : "bg-yellow-500 text-white hover:bg-yellow-600 hover:scale-110"
+                              }`}
                               title={
-                                showQrisReminderButton
-                                  ? "Ada pembayaran tertunda"
+                                isOutOfStock
+                                  ? "Menu Tidak Tersedia"
                                   : "Tambahkan ke Keranjang"
                               }
-                              aria-label={`Tambahkan ${menu.name_menu} ke keranjang`}
                             >
-                              {/* Logika kondisional untuk menampilkan ikon */}
                               <FontAwesomeIcon
                                 icon={
                                   addedToCartStatus[menu.id_menu]

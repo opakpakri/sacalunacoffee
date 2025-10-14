@@ -104,6 +104,19 @@ class PaymentsController {
         [id_order]
       );
 
+      // Mengembalikan stok karena pembayaran gagal
+      const [orderedItems] = await conn.query(
+        `SELECT id_menu, quantity FROM order_items WHERE id_order = ?`,
+        [id_order]
+      );
+
+      for (const item of orderedItems) {
+        await conn.query(
+          `UPDATE menus SET stock = stock + ? WHERE id_menu = ?`,
+          [item.quantity, item.id_menu]
+        );
+      }
+
       await conn.commit();
       res
         .status(200)
@@ -122,14 +135,34 @@ class PaymentsController {
     await conn.beginTransaction();
     try {
       const [expiredPayments] = await conn.query(
-        `SELECT id_payment FROM payments WHERE payment_status = 'pending' AND payment_time < NOW() - INTERVAL 10 MINUTE`
+        `SELECT id_payment, p.id_order FROM payments p
+          JOIN orders o ON p.id_order = o.id_order
+          WHERE p.payment_status = 'pending' AND o.status = 'waiting' AND p.payment_time < NOW() - INTERVAL 10 MINUTE`
       );
 
       if (expiredPayments.length > 0) {
         for (const payment of expiredPayments) {
+          // Mengembalikan stok untuk pesanan yang kadaluarsa
+          const [orderedItems] = await conn.query(
+            `SELECT id_menu, quantity FROM order_items WHERE id_order = ?`,
+            [payment.id_order]
+          );
+
+          for (const item of orderedItems) {
+            await conn.query(
+              `UPDATE menus SET stock = stock + ? WHERE id_menu = ?`,
+              [item.quantity, item.id_menu]
+            );
+          }
+
+          // Ubah status pembayaran dan pesanan
           await conn.query(
-            `UPDATE payments SET payment_status = 'failed', payment_time = NOW() WHERE id_payment = ?`,
+            `UPDATE payments SET payment_status = 'failed' WHERE id_payment = ?`,
             [payment.id_payment]
+          );
+          await conn.query(
+            `UPDATE orders SET status = 'canceled' WHERE id_order = ?`,
+            [payment.id_order]
           );
         }
       }
@@ -258,19 +291,19 @@ class PaymentsController {
         }
       }
 
-      console.log("Final amount_paid to be saved:", finalAmountPaid); // Check this log
+      console.log("Final amount_paid to be saved:", finalAmountPaid);
       console.log("SQL Query parameters:", [
         new_status,
         finalAmountPaid,
         id_payment,
-      ]); // Check parameters
+      ]);
 
       const [result] = await conn.query(
         `UPDATE payments SET payment_status = ?, amount_paid = ?, payment_time = NOW() WHERE id_payment = ?`,
         [new_status, finalAmountPaid, id_payment]
       );
 
-      console.log("Database UPDATE query result:", result); // Check affectedRows
+      console.log("Database UPDATE query result:", result);
 
       if (result.affectedRows === 0) {
         await conn.rollback();
@@ -295,6 +328,19 @@ class PaymentsController {
         } else if (new_status === "failed") {
           orderStatusUpdateQuery = `UPDATE orders SET status = 'canceled' WHERE id_order = ? AND status != 'completed'`;
           orderStatusUpdateParams = [id_order];
+
+          // 🔹 Mengembalikan stok hanya jika pembayaran gagal
+          const [orderedItems] = await conn.query(
+            `SELECT id_menu, quantity FROM order_items WHERE id_order = ?`,
+            [id_order]
+          );
+
+          for (const item of orderedItems) {
+            await conn.query(
+              `UPDATE menus SET stock = stock + ? WHERE id_menu = ?`,
+              [item.quantity, item.id_menu]
+            );
+          }
         }
 
         if (orderStatusUpdateQuery) {

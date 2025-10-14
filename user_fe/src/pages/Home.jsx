@@ -104,6 +104,12 @@ function Home() {
   const addToCart = (menu) => {
     const existing = cart.find((item) => item.id_menu === menu.id_menu);
     if (existing) {
+      // Cek apakah stok masih tersedia
+      if (existing.quantity >= menu.stock) {
+        alert(`Mohon maaf, untuk item ini hanya tersisa ${menu.stock} item.`);
+        return;
+      }
+
       setCart(
         cart.map((item) =>
           item.id_menu === menu.id_menu
@@ -112,18 +118,33 @@ function Home() {
         )
       );
     } else {
-      setCart([...cart, { ...menu, quantity: 1 }]);
+      // Jika stok minimal 1
+      if (menu.stock > 0) {
+        setCart([...cart, { ...menu, quantity: 1 }]);
+      } else {
+        alert(`"${menu.name_menu}" sedang habis.`);
+      }
     }
   };
 
   const updateCartItem = (id_menu, delta) => {
-    setCart(
-      cart
-        .map((item) =>
-          item.id_menu === id_menu
-            ? { ...item, quantity: item.quantity + delta }
-            : item
-        )
+    setCart((prevCart) =>
+      prevCart
+        .map((item) => {
+          if (item.id_menu === id_menu) {
+            const newQuantity = item.quantity + delta;
+
+            if (newQuantity > item.stock) {
+              alert(
+                `Mohon maaf, untuk item ini hanya tersisa ${item.stock} item.`
+              );
+              return item; // jangan ubah quantity
+            }
+
+            return { ...item, quantity: Math.max(newQuantity, 0) };
+          }
+          return item;
+        })
         .filter((item) => item.quantity > 0)
     );
   };

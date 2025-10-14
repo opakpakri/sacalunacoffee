@@ -62,11 +62,12 @@ exports.checkout = async (req, res) => {
     }
 
     const id_table = tableRows[0].id_table;
+
     const currentOrderTime = getJakartaDateTime();
 
     const [orderResult] = await conn.query(
       `INSERT INTO orders (id_table, name_customer, phone, table_number, payment_method, status, order_time)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         id_table,
         name_customer,
@@ -88,6 +89,24 @@ exports.checkout = async (req, res) => {
           .json({ error: "Data item pesanan tidak lengkap" });
       }
 
+      const [menuRows] = await conn.query(
+        `SELECT stock FROM menus WHERE id_menu = ?`,
+        [item.id_menu]
+      );
+
+      if (menuRows.length === 0 || menuRows[0].stock < item.quantity) {
+        await conn.rollback();
+        return res.status(400).json({
+          error: `Stok untuk menu dengan ID ${item.id_menu} tidak mencukupi.`,
+        });
+      }
+
+      // 🔹 Kurangi stok sekarang saat pesanan dibuat
+      await conn.query(`UPDATE menus SET stock = stock - ? WHERE id_menu = ?`, [
+        item.quantity,
+        item.id_menu,
+      ]);
+
       await conn.query(
         `INSERT INTO order_items (id_order, id_menu, quantity, price)
                  VALUES (?, ?, ?, ?)`,
@@ -99,22 +118,22 @@ exports.checkout = async (req, res) => {
 
     let initial_amount_paid = null;
     if (payment_type === "cashier") {
-      initial_amount_paid = null;
+      initial_amount_paid = null; // Tetap null jika bayar di kasir
     } else {
-      initial_amount_paid = null;
+      initial_amount_paid = null; // Tetap null jika online tapi pembayaran belum dikonfirmasi
     }
 
     await conn.query(
       `INSERT INTO payments (id_order, id_table, amount, amount_paid, payment_status, payment_type, payment_time)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+               VALUES (?, ?, ?, ?, ?, ?, ?)`, // Hapus NOW() di sini
       [
         id_order,
         id_table,
         amount,
         initial_amount_paid,
-        "pending",
+        "pending", // Status awal selalu pending
         payment_type || "cashier",
-        currentPaymentTime,
+        currentPaymentTime, // Gunakan waktu Jakarta di sini
       ]
     );
 

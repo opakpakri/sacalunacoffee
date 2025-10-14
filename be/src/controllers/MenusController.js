@@ -173,10 +173,39 @@ const deleteMenu = async (req, res) => {
   }
 };
 
+const updateMenuStock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stock } = req.body;
+
+    if (stock === undefined || isNaN(stock)) {
+      return res.status(400).json({ message: "Invalid stock value" });
+    }
+
+    const [rows] = await pool.query("SELECT * FROM menus WHERE id_menu = ?", [
+      id,
+    ]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Menu not found" });
+    }
+
+    await pool.query("UPDATE menus SET stock = ? WHERE id_menu = ?", [
+      stock,
+      id,
+    ]);
+
+    res.status(200).json({ message: "Stock updated successfully" });
+  } catch (error) {
+    console.error("Error updating stock:", error.message);
+    res.status(500).json({ message: "Failed to update stock" });
+  }
+};
+
 module.exports = {
   getAllMenus,
   addMenu,
   updateMenu,
   getMenuById,
   deleteMenu,
+  updateMenuStock,
 };

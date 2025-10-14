@@ -7,6 +7,7 @@ const {
   updateMenu,
   getMenuById,
   deleteMenu,
+  updateMenuStock,
 } = require("../controllers/MenusController");
 
 // Middleware untuk set uploadType menu
@@ -20,5 +21,6 @@ router.post("/", setMenuUploadType, upload.single("image"), addMenu);
 router.put("/:id", setMenuUploadType, upload.single("image"), updateMenu);
 router.get("/:id", getMenuById);
 router.delete("/:id", deleteMenu);
+router.put("/:id/stock", updateMenuStock);
 
 module.exports = router;
